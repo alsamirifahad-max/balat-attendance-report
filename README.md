@@ -21,4 +21,7 @@ bash verify.sh        # فحوص الأمان
 ```
 ثم افتح طلب دمج (Pull Request) إلى `main`. بعد نجاح الفحص الآلي والدمج، ينشر Netlify التحديث تلقائيًا.
 
+## النشر
+المستودع مربوط بموقع Netlify ‏`blatshf02`: كل دفع إلى الفرع `main` يُنشر تلقائيًا على https://blatshf02.netlify.app
+
 راجع [SECURITY.md](SECURITY.md) لنموذج الحماية.
