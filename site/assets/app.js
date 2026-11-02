@@ -57,8 +57,9 @@ function updateStamp(){
   if($('sDate')) $('sDate').textContent='تاريخ الكشف: '+[d.day,d.hijriLong].filter(Boolean).join(' · ');
 }
 applyGreg(todayISO());
-$('fGreg').addEventListener('input',()=>{ hijriManual=false; applyGreg() });
-$('fHijri').addEventListener('input',()=>{ hijriManual=true; updateStamp() });
+let dateTouched=false;
+$('fGreg').addEventListener('input',()=>{ dateTouched=true; hijriManual=false; applyGreg() });
+$('fHijri').addEventListener('input',()=>{ dateTouched=true; hijriManual=true; updateStamp() });
 
 /* ---------- files ---------- */
 function refreshSlots(){
@@ -127,9 +128,11 @@ $('run').addEventListener('click',async()=>{
     if(!S.students.length) throw new Error('لم أجد قائمة الطلاب في ملف الغياب. تأكد أنه «تقرير غياب الحصص للطلاب» من نقار.');
     model=Core.buildModel(T,S);
     teacherAbsent=model.teachers.map(t=>!t.present);
-    hijriManual=false; if(model.dates.gregText||model.dates.hijriText) applyGreg(model.dates.gregText||'',model.dates.hijriText);
+    let dateNote='';
+    if(!dateTouched){ hijriManual=false; if(model.dates.gregText||model.dates.hijriText) applyGreg(model.dates.gregText||'',model.dates.hijriText) }
+    else if(model.dates.hijriText&&model.dates.hijriText!==curDate().hijriText){ dateNote=` تنبيه: أبقيت التاريخ الذي اخترته (${curDate().day} ${curDate().hijriText})، بينما تاريخ ملفات نقار ${model.dates.day||''} ${model.dates.hijriText}.` }
     render();
-    setStatus(`تمت القراءة: ${model.tStats.total} معلمًا و${model.sStats.total} طالبًا.`);
+    setStatus(`تمت القراءة: ${model.tStats.total} معلمًا و${model.sStats.total} طالبًا.`+dateNote);
   }catch(e){console.error(e);setStatus(e.message||'تعذّرت قراءة الملفات.',true)}
   $('run').disabled=false;
 });

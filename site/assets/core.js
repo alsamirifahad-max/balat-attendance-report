@@ -450,11 +450,16 @@ async function fillDocx(JSZip,docxBuf,model,opts){
   // lessons table
   const les=find(s=>s.includes('اسم المعلم')&&s.includes('عنوان الدرس'));
   const markHeader=tr=>{ let trPr=kids(tr,'trPr')[0]; if(!trPr){trPr=mk('trPr'); const ex=kids(tr,'tblPrEx')[0]; tr.insertBefore(trPr, ex?ex.nextSibling:tr.firstChild)} if(!kids(trPr,'tblHeader').length) trPr.appendChild(mk('tblHeader')) };
-  const fixTitleCell=(tc,newFirst)=>{ for(const t of all(tc,'t')){ let s=t.textContent;
-      if(newFirst) s=s.replace(/لمدرسة\s*(\S.*)?$/, m=>'لمدرسة '+(school||'').trim()+' ');
-      if(d.day) s=s.replace(/ليوم\s+\S+/,'ليوم '+d.day);
-      if(d.hijriText) s=s.replace(/\d{1,2}\/\d{1,2}\/\d{4}\s*هـ*/,d.hijriText);
-      t.textContent=s } };
+  // Word often splits one visible line into many runs ("ليوم" | " " | "الأحد" | "2" | "1" | "/"...).
+  // Work on each paragraph's full text, then write it back into its first run.
+  const DAY_RE=/(ليوم|يوم)(\s*)(الأحد|الاحد|الاثنين|الإثنين|الثلاثاء|الأربعاء|الاربعاء|الخميس|الجمعة|السبت)/g;
+  const DATE_RE=/\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*1\d{3}\s*هـ*/g;
+  const rewritePara=(p,fn)=>{ const ts=all(p,'t'); if(!ts.length) return false; const before=ts.map(t=>t.textContent).join(''); const after=fn(before);
+    if(after===before) return false; ts[0].textContent=after; ts[0].setAttributeNS('http://www.w3.org/XML/1998/namespace','xml:space','preserve'); ts.slice(1).forEach(t=>t.textContent=''); return true };
+  const dateFix=str=>{ let o=str; if(d.day) o=o.replace(DAY_RE,(m,a,sp)=>a+(sp||' ')+d.day); if(d.hijriText) o=o.replace(DATE_RE,d.hijriText); return o };
+  const fixTitleCell=(tc,newFirst)=>{ for(const p of all(tc,'p')) rewritePara(p,str=>{ let o=dateFix(str);
+      if(newFirst&&school&&!o.includes(school)) o=o.replace(/لمدرسة\s*$/,'لمدرسة '+school+' ');
+      return o }) };
   if(les){
     const rows=kids(les,'tr'); const hdrIdx=rows.findIndex(r=>/اسم المعلم/.test(text(r)));
     const t1=rows[hdrIdx+1], t2=rows[hdrIdx+2]||rows[hdrIdx+1];
@@ -478,11 +483,19 @@ async function fillDocx(JSZip,docxBuf,model,opts){
       les.parentNode.insertBefore(br,les.nextSibling); br.parentNode.insertBefore(ab,br.nextSibling);
     }
   } else warn.push('جدول الحصص الافتراضية');
+  // final sweep: any remaining "ليوم <day>" or Hijri date anywhere in the body
+  for(const p of all(doc,'p')){ const tx=text(p); if(/\d\s*\/\s*\d/.test(tx)||/يوم/.test(tx)) rewritePara(p,dateFix) }
   if(opts.support&&opts.support.length){
     const ps=all(doc,'p'); const i=ps.findIndex(p=>/الدعم الذي تحتاجه/.test(text(p)));
     if(i>=0){ const items=[]; for(let k=i+1;k<ps.length;k++){ const pPr=kids(ps[k],'pPr')[0]; if(pPr&&kids(pPr,'numPr').length) items.push(ps[k]); else if(items.length) break }
       if(items.length){ while(items.length<opts.support.length){ const c=items[items.length-1].cloneNode(true); items[items.length-1].parentNode.insertBefore(c,items[items.length-1].nextSibling); items.push(c) }
         items.forEach((p,k)=>{ const fake=mk('tc'); p.parentNode.insertBefore(fake,p); fake.appendChild(p); setText(fake,opts.support[k]||''); fake.parentNode.insertBefore(p,fake); fake.parentNode.removeChild(fake) }) } }
+  }
+  for(const hf of Object.keys(zip.files).filter(n=>/^word\/(header|footer)\d*\.xml$/.test(n))){
+    const hx=new DOMParser().parseFromString(await zip.file(hf).async('string'),'application/xml'); let changed=false;
+    for(const p of Array.from(hx.getElementsByTagNameNS(WNS,'p'))){ const ts=Array.from(p.getElementsByTagNameNS(WNS,'t')); if(!ts.length) continue; const before=ts.map(t=>t.textContent).join(''); const after=dateFix(before);
+      if(after!==before){ ts[0].textContent=after; ts.slice(1).forEach(t=>t.textContent=''); changed=true } }
+    if(changed) zip.file(hf,new XMLSerializer().serializeToString(hx));
   }
   zip.file('word/document.xml',new XMLSerializer().serializeToString(doc));
   const out=await zip.generateAsync({type:'uint8array',compression:'DEFLATE'});
