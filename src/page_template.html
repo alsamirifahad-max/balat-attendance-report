@@ -138,6 +138,11 @@ tr.grp td{background:var(--teal-soft);font-weight:600;font-family:var(--display)
 .empty-state ol{margin:0;padding-inline-start:20px;display:grid;gap:4px;color:var(--ink-2)}
 .note{font-size:.82rem;color:var(--ink-2);margin:0}
 .list{margin:0;padding-inline-start:18px;display:grid;gap:4px}
+.site-foot{border-top:1px solid var(--line);background:var(--card);margin-top:8px}
+.site-foot-in{max-width:1180px;margin:0 auto;padding-block:18px calc(18px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;align-items:center;justify-content:center;gap:10px;text-align:center}
+.site-foot p{margin:0;font-size:.88rem;color:var(--ink-2)}
+.site-foot b{color:var(--teal);font-family:var(--display);font-weight:600}
+.site-foot .mark{width:22px;height:4px;border-radius:2px;background:linear-gradient(90deg,var(--teal),var(--teal-2));flex:none}
 .busy{position:fixed;inset:auto 0 0 0;padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:var(--ink);color:var(--paper);text-align:center;font-weight:500;z-index:20}
 /* print rendering (off-screen, always on white paper) */
 #render{position:absolute;left:-30000px;top:0;direction:rtl}
@@ -318,6 +323,12 @@ table.pt td.lt{text-align:right}
     <p class="note">زر «طباعة» يُنزّل ملف PDF بمقاس A4 جاهزًا للطباعة مباشرة، لأن هذه الصفحة لا تستطيع فتح نافذة الطباعة بنفسها.</p>
   </div>
 </div>
+<footer class="site-foot" dir="rtl" lang="ar">
+  <div class="site-foot-in">
+    <span class="mark" aria-hidden="true"></span>
+    <p>جميع الحقوق محفوظة <span aria-hidden="true">©</span> <b>ثانوية بلاط الشهداء بجدة</b> <span id="copyYear"></span></p>
+  </div>
+</footer>
 <div id="render" aria-hidden="true"></div>
 <div class="busy" id="busy" hidden></div>
 
@@ -371,6 +382,7 @@ function updateStamp(){
   if($('sDate')) $('sDate').textContent='تاريخ الكشف: '+[d.day,d.hijriLong].filter(Boolean).join(' · ');
 }
 applyGreg(todayISO());
+(()=>{ const iso=todayISO(); const h=hijriOf(iso); $('copyYear').textContent=`— ${h?h.y+'هـ / ':''}${iso.slice(0,4)}م` })();
 let dateTouched=false;
 $('fGreg').addEventListener('input',()=>{ dateTouched=true; hijriManual=false; applyGreg() });
 $('fHijri').addEventListener('input',()=>{ dateTouched=true; hijriManual=true; updateStamp() });

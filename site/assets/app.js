@@ -57,6 +57,7 @@ function updateStamp(){
   if($('sDate')) $('sDate').textContent='تاريخ الكشف: '+[d.day,d.hijriLong].filter(Boolean).join(' · ');
 }
 applyGreg(todayISO());
+(()=>{ const iso=todayISO(); const h=hijriOf(iso); $('copyYear').textContent=`— ${h?h.y+'هـ / ':''}${iso.slice(0,4)}م` })();
 let dateTouched=false;
 $('fGreg').addEventListener('input',()=>{ dateTouched=true; hijriManual=false; applyGreg() });
 $('fHijri').addEventListener('input',()=>{ dateTouched=true; hijriManual=true; updateStamp() });
