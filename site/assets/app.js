@@ -128,6 +128,7 @@ $('run').addEventListener('click',async()=>{
     if(sf.docx) S=Core.parseStudentsDocx(sf.docx); else S=Core.parseStudents(sf.pages||await extract(sf.bytes.slice(0)));
     if(!S.students.length) throw new Error('لم أجد قائمة الطلاب في ملف الغياب. تأكد أنه «تقرير غياب الحصص للطلاب» من نقار.');
     model=Core.buildModel(T,S);
+    { const mem=subjMem(); model.teachers.forEach(t=>{ if(!t.subject&&mem[t.name]) t.subject=mem[t.name] }) }
     teacherAbsent=model.teachers.map(t=>!t.present);
     let dateNote='';
     if(!dateTouched){ hijriManual=false; if(model.dates.gregText||model.dates.hijriText) applyGreg(model.dates.gregText||'',model.dates.hijriText) }
@@ -140,6 +141,10 @@ $('run').addEventListener('click',async()=>{
 
 /* ---------- derived data ---------- */
 function tStats(){ const total=model.teachers.length, absent=teacherAbsent.filter(Boolean).length; return {total,present:total-absent,absent} }
+/* subjects typed manually are remembered in this browser only, per teacher name */
+const SUBJ_KEY='balat.subjects.v1';
+function subjMem(){ try{ const m=JSON.parse(localStorage.getItem(SUBJ_KEY)||'{}'); return (m&&typeof m==='object')?m:{} }catch(e){ return {} } }
+function subjSave(name,v){ try{ const m=subjMem(); if(v) m[name]=v.slice(0,80); else delete m[name]; localStorage.setItem(SUBJ_KEY,JSON.stringify(m)) }catch(e){} }
 function cnt(s){ return s.absent.length }
 function bucketOf(n){ return n>=7?7:n }
 const withStatus=()=>$('fPartial').checked;
@@ -189,7 +194,7 @@ function renderTeachers(){
     const st=!t.present?'<span class="pill a">لم يُعدّ</span>':(t.notPrepared?`<span class="pill p">${t.notPrepared} غير معدّة</span>`:'');
     return `<tr class="${!t.present?'flag':(t.notPrepared?'half':'')}"><td class="num">${i+1}</td><td>${esc(t.name)}</td><td>${esc(t.cls)}</td><td class="num">${esc(t.periods)}</td>
     <td><input type="text" id="subj-${i}" data-i="${i}" value="${esc(t.subject)}" class="${t.subject?'':'empty'}" aria-label="مادة ${esc(t.name)}"></td><td>${esc(t.title)}</td><td>${st}</td></tr>`}).join('');
-  $('tBody').querySelectorAll('input').forEach(inp=>inp.addEventListener('input',()=>{model.teachers[+inp.dataset.i].subject=inp.value.trim();inp.classList.toggle('empty',!inp.value.trim());renderWarnings();renderAbsentTeachers()}));
+  $('tBody').querySelectorAll('input').forEach(inp=>inp.addEventListener('input',()=>{model.teachers[+inp.dataset.i].subject=inp.value.trim();subjSave(model.teachers[+inp.dataset.i].name,inp.value.trim());inp.classList.toggle('empty',!inp.value.trim());renderWarnings();renderAbsentTeachers()}));
 }
 function renderStudents(){
   // bucket counts (respect grade/status filters)
