@@ -71,7 +71,7 @@ function refreshSlots(){
       x.style.cssText='margin-inline-start:8px;font:inherit;font-size:.8rem;padding:1px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--red);cursor:pointer';
       x.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation(); if(k==='form'){ files.form=null; formMeta=null; fetch('assets/form.docx',{credentials:'omit',cache:'no-cache'}).then(r=>r.arrayBuffer()).then(b=>{ if(!files.form){ files.form={name:'الاستمارة المحفوظة (بلاط الشهداء)',bytes:new Uint8Array(b),builtin:true}; refreshSlots() } }).catch(()=>{}) } else delete files[k]; refreshSlots(); setStatus('أُزيل الملف. اضغط «إنشاء التقرير» لتحديث النتائج.') });
       $('name-'+k).appendChild(x) }
-    $('tag-'+k).textContent=f?'جاهز':(k==='form'?'Word':'PDF / Word');
+    $('tag-'+k).textContent=f?'جاهز':(k==='form'?'Word':'PDF / Word / Excel');
   }
   $('run').disabled=!files.form;
 }
@@ -94,11 +94,29 @@ async function classify(file){
   return {kind:null,bytes,pages};
 }
 const isSheet=f=>/\.(xlsx|xls|xlsm|csv)$/i.test(f.name||'');
+// Excel sheets -> the same {tables,paras} shape that Core builds from Word files
+async function sheetContent(f){
+  if(f.size>MAX_FILE_BYTES) throw new Error('الملف «'+f.name+'» أكبر من 25 ميجابايت.');
+  const buf=await f.arrayBuffer(); let wb;
+  if(/\.csv$/i.test(f.name)){ let t=new TextDecoder('utf-8').decode(buf); if(t.indexOf('\uFFFD')>=0){ try{ t=new TextDecoder('windows-1256').decode(buf) }catch(e){} } wb=XLSX.read(t.replace(/^\uFEFF/,''),{type:'string'}) }
+  else wb=XLSX.read(buf,{type:'array'});
+  const tables=[], paras=[];
+  wb.SheetNames.forEach(sn=>{ const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:'',raw:false,blankrows:false}).map(r=>r.map(v=>String(v==null?'':v).trim()));
+    rows.forEach(r=>{ const f1=r.filter(Boolean); if(f1.length===1) paras.push(f1[0]) }); tables.push(rows) });
+  return {tables,paras};
+}
 let nlMsg='';
 async function addFiles(list,hint){
   let err=''; nlMsg='';
   for(const f of list){
     setStatus('جارٍ قراءة '+f.name+' …');
+    // Excel / CSV: a Naqar report (teachers or absence) is read like its Word version; anything else is the platform list
+    if(isSheet(f)&&hint!=='nologin'&&window.XLSX){
+      try{ const c=await sheetContent(f); const k=Core.docxKind(c);
+        if(k==='teachers'||k==='students'){ files[k]={name:f.name,bytes:new Uint8Array(0),docx:c}; continue }
+        if(k==='form'){ err='الاستمارة تُرفع بصيغة Word حتى يمكن تعبئتها، وحتى ذلك الحين تُستخدم الاستمارة المحفوظة.'; continue }
+      }catch(e){ console.error(e) }
+    }
     if(isSheet(f)||hint==='nologin'){
       if(!window.NoLogin){ err='تعذّر تحميل قارئ ملف الطلاب الغائبين عن المنصة. أعد تحميل الصفحة.'; continue }
       try{ const inf=await window.NoLogin.loadFile(f);
