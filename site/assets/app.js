@@ -88,10 +88,10 @@ async function classify(file){
   const {extract}=Core.makeExtractor(PDFLib); const pages=await extract(bytes.slice(0));
   if(pages.length>MAX_PDF_PAGES) throw new Error('ملف PDF طويل جدًا.');
   const txt=pages.slice(0,1).flatMap(p=>p.runs.map(r=>r.str)).join('');
-  if(/متابعة سير العملية|نسبة الحضور/.test(txt)) return {kind:'formpdf',bytes};
+  if(/متابعة سير العملية|نسبة الحضور/.test(txt)) return {kind:'formpdf',bytes,pages};
   if(/تحضير|عنوان|الدرس/.test(txt)) return {kind:'teachers',bytes,pages};
   if(/الحالة|غياب|الطالب/.test(txt)) return {kind:'students',bytes,pages};
-  return {kind:null,bytes};
+  return {kind:null,bytes,pages};
 }
 const isSheet=f=>/\.(xlsx|xls|xlsm|csv)$/i.test(f.name||'');
 let nlMsg='';
@@ -102,12 +102,15 @@ async function addFiles(list,hint){
     if(isSheet(f)||hint==='nologin'){
       if(!window.NoLogin){ err='تعذّر تحميل قارئ ملف الطلاب الغائبين عن المنصة. أعد تحميل الصفحة.'; continue }
       try{ const inf=await window.NoLogin.loadFile(f);
-        nlMsg=inf.full?`ملف المنصة: في الملف ${inf.total} طالبًا، لم يدخل منهم ${inf.missing}${inf.refTxt?' (آخر دخول '+inf.refTxt+')':''}. تجدهم في قسم «الطلاب الذين لم يدخلوا المنصة» أسفل الصفحة.`:`ملف المنصة: تمت قراءة ${inf.total} طالبًا.`;
+        nlMsg=(inf.full&&inf.total!==inf.missing)?`ملف المنصة: في الملف ${inf.total} طالبًا، لم يدخل منهم ${inf.missing}${inf.refTxt?' (آخر دخول '+inf.refTxt+')':''}. تجدهم في قسم «الطلاب الذين لم يدخلوا المنصة» أسفل الصفحة.`:`ملف المنصة: ${inf.total} طالبًا لم يدخلوا المنصة، وتجدهم في قسمهم أسفل الصفحة.`;
       }catch(e){ console.error(e); err=(e&&e.message)||('تعذّرت قراءة «'+f.name+'».') }
       continue;
     }
     try{
       const r=await classify(f);
+      // the platform list (students who did not log in) can come as PDF or Word too, in any slot
+      if(window.NoLogin){ const inf=r.pages?await window.NoLogin.tryPages(r.pages,f.name):(r.docx?await window.NoLogin.tryDocx(r.bytes.slice(0),f.name):null);
+        if(inf){ nlMsg=(inf.full&&inf.total!==inf.missing)?`ملف المنصة: في الملف ${inf.total} طالبًا، لم يدخل منهم ${inf.missing}${inf.refTxt?' (آخر دخول '+inf.refTxt+')':''}. تجدهم في قسم «الطلاب الذين لم يدخلوا المنصة» أسفل الصفحة.`:`ملف المنصة: ${inf.total} طالبًا لم يدخلوا المنصة، وتجدهم في قسمهم أسفل الصفحة.`; continue } }
       if(r.kind==='formpdf'){ err='الاستمارة بصيغة PDF لا يمكن تعبئتها. ارفعها بصيغة Word، وحتى ذلك الحين تُستخدم الاستمارة المحفوظة.'; continue }
       const k=r.kind||(hint!=='form'?hint:null);
       if(!k){ err='لم أتعرف على الملف «'+f.name+'». تأكد أنه تقرير نقار أو استمارة المتابعة.'; continue }
@@ -134,7 +137,7 @@ if($('slot-nologin')){
   slot.addEventListener('drop',e=>{e.preventDefault();slot.classList.remove('drag');addFiles([...e.dataTransfer.files],'nologin')});
   document.addEventListener('nologin:cleared',()=>{ slot.classList.remove('ok'); $('name-nologin').textContent='لم يُرفع ملف'; $('tag-nologin').textContent='Excel'; setStatus('أُزيل ملف الطلاب الغائبين عن المنصة.'); if(model) updateDlNote() });
   document.addEventListener('nologin:data',e=>{ const d=e.detail||{}; slot.classList.add('ok');
-    $('name-nologin').textContent=d.name+(d.full?` — لم يدخل ${d.missing} من ${d.total}`:` — ${d.total} طالبًا`); $('tag-nologin').textContent='جاهز';
+    $('name-nologin').textContent=d.name+((d.full&&d.total!==d.missing)?` — لم يدخل ${d.missing} من ${d.total}`:` — ${d.missing} طالبًا لم يدخلوا`); $('tag-nologin').textContent='جاهز';
     const x=document.createElement('button'); x.type='button'; x.textContent='إزالة'; x.style.cssText='margin-inline-start:8px;font:inherit;font-size:.8rem;padding:1px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--red);cursor:pointer';
     x.addEventListener('click',ev=>{ ev.preventDefault(); ev.stopPropagation(); if(window.NoLogin&&window.NoLogin.clear) window.NoLogin.clear() }); $('name-nologin').appendChild(x);
     if(model) updateDlNote() });
@@ -200,10 +203,35 @@ function studentGroups(list){
 /* ---------- render ---------- */
 function render(){
   $('emptyState').hidden=true; $('results').hidden=false;
-  renderFigures(); renderTeachers(); renderStudents(); renderAbsentTeachers(); renderWarnings(); updateDlNote();
+  renderFigures(); renderTeachers(); renderStudents(); renderAbsentTeachers(); renderWarnings(); updateDlNote(); updateSrcNote();
+}
+/* ---- student statistics source: Naqar absence report or the Madrasati platform list (user's choice) ---- */
+function studentSrc(){
+  const r=document.querySelector('input[name="sSrc"]:checked'); const v=r?r.value:'auto';
+  const hasN=!!files.students&&model&&model.sStats.total>0, hasP=!!(window.NoLogin&&window.NoLogin.hasData());
+  if(v==='naqar') return hasN?'naqar':(hasP?'platform':'naqar');
+  if(v==='platform') return hasP?'platform':'naqar';
+  return hasN?'naqar':(hasP?'platform':'naqar');
+}
+function platformStats(){
+  const p=window.NoLogin&&window.NoLogin.stats&&window.NoLogin.stats(); if(!p) return null;
+  let total=p.total;
+  if(!p.full){ const t=parseInt(($('sTotal')&&$('sTotal').value)||'',10); total=t>0?t:(model&&model.sStats.total>0?model.sStats.total:0) }
+  if(!total) return null;
+  const absent=Math.min(p.absent,total); return {total,present:total-absent,absent};
+}
+function sStats(){ if(studentSrc()==='platform'){ const p=platformStats(); if(p) return p } return model.sStats }
+function updateSrcNote(){
+  const el=$('sSrcNote'); if(!el) return;
+  const src=studentSrc(), p=window.NoLogin&&window.NoLogin.stats&&window.NoLogin.stats();
+  if($('sTotalWrap')) $('sTotalWrap').hidden=!(p&&!p.full);
+  if(!model){ el.textContent=''; return }
+  const S=sStats();
+  if(src==='platform'&&!platformStats()) el.textContent='اكتب إجمالي طلاب المدرسة ليُحسب الحضور من ملف المنصة، وحتى ذلك الحين تُستخدم أرقام نقار.';
+  else el.textContent=(src==='platform'?'المصدر الحالي: ملف منصة مدرستي':'المصدر الحالي: تقرير غياب الحصص من نقار')+` — الإجمالي ${S.total}، الحاضرون ${S.present}، الغائبون ${S.absent}.`;
 }
 function statData(){
-  const T=tStats(),S=model.sStats,L=model.lessons; const sync=Math.max(0,L.prepared-L.async);
+  const T=tStats(),S=sStats(),L=model.lessons; const sync=Math.max(0,L.prepared-L.async);
   return [
     {key:'t',title:'المعلمون',main:'الحاضرون',v:T.present,of:T.total,y:['حضور',T.present],n:['غياب',T.absent],c:'var(--teal)',pc:'#1d6f68'},
     {key:'s',title:'الطلاب',main:'الحاضرون',v:S.present,of:S.total,y:['حضور',S.present],n:['غياب',S.absent],c:'var(--blue)',pc:'#2f6fb0'},
@@ -296,6 +324,12 @@ $('bAll').addEventListener('input',()=>{ for(let i=1;i<=7;i++) $('b'+i).checked=
 ['fGrade','fPartial','fSearch','fMerge','b1','b2','b3','b4','b5','b6','b7'].forEach(id=>$(id).addEventListener('input',()=>{ $('bAll').checked=[1,2,3,4,5,6,7].every(i=>$('b'+i).checked); renderStudents();updateDlNote()}));
 $('addAbsent').addEventListener('change',updateDlNote);
 if($('addNoLogin')) $('addNoLogin').addEventListener('change',updateDlNote);
+document.querySelectorAll('input[name="sSrc"]').forEach(r=>r.addEventListener('change',()=>{ if(model){ renderFigures(); updateSrcNote() } }));
+if($('sTotal')){ try{ const v=localStorage.getItem('balat-sTotal'); if(v) $('sTotal').value=v }catch(e){}
+  $('sTotal').addEventListener('input',()=>{ try{ localStorage.setItem('balat-sTotal',$('sTotal').value) }catch(e){} if(model){ renderFigures(); updateSrcNote() } }) }
+document.addEventListener('nologin:data',e=>{ const d=e.detail||{}; if(d.full&&d.total!==d.missing&&$('sTotal')){ $('sTotal').value=d.total; try{ localStorage.setItem('balat-sTotal',String(d.total)) }catch(_){} }
+  updateSrcNote(); if(model) renderFigures() });
+document.addEventListener('nologin:cleared',()=>{ updateSrcNote(); if(model) renderFigures() });
 document.addEventListener('nologin:change',()=>{ if(model) updateDlNote() });
 const TABS=[['tab-t','pane-t'],['tab-s','pane-s'],['tab-a','pane-a'],['tab-w','pane-w']];
 for(const [id] of TABS) $(id).addEventListener('click',()=>{for(const [i2,p2] of TABS){$(i2).setAttribute('aria-selected',i2===id);$(p2).hidden=i2!==id}});
@@ -330,7 +364,7 @@ function fname(base,ext){ return safeName(fname0(base,ext)) }
 function safeName(s){ return s.replace(/[\\/:*?"<>|\u0000-\u001f]/g,'_').slice(0,150) }
 function fname0(base,ext){ const d=curDate(); return `${base}_${(d.hijriText||'').replace(/\//g,'-').replace(/هـ/g,'')}.${ext}`.replace(/_\./,'.').replace(/\s+/g,'_') }
 
-function exportModel(){ return Object.assign({},model,{tStats:tStats(),dates:Object.assign({},model.dates,curDate())}) }
+function exportModel(){ return Object.assign({},model,{tStats:tStats(),sStats:sStats(),dates:Object.assign({},model.dates,curDate())}) }
 function formAbsentRows(){
   const list=studentList({ignoreSearch:true}); const groups=studentGroups(list); const out=[];
   groups.forEach(g=>{ if(g.title) out.push({groupTitle:`${g.title} — ${g.rows.length} طالبًا`}); g.rows.forEach(s=>out.push(Object.assign({},s,{count:cnt(s)}))) });
@@ -420,7 +454,7 @@ function buildStatsPages(){
 }
 function buildListPages(spec){ $('render').innerHTML=''; const pages=[]; spec.groups.forEach(g=>addTable(pages,spec,g,spec.orientation)); return pages }
 function buildFormPages(){
-  $('render').innerHTML=''; const pages=[]; const m=formMeta, d=curDate(), T=tStats(), S=model.sStats, L=model.lessons;
+  $('render').innerHTML=''; const pages=[]; const m=formMeta, d=curDate(), T=tStats(), S=sStats(), L=model.lessons;
   const cur=newPage('land'); pages.push(cur.pg);
   const box=v=>v?'☑':'☐';
   cur.body.innerHTML=`<div class="p-title">${esc(m.title)}</div>

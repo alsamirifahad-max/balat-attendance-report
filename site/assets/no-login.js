@@ -5,7 +5,7 @@
 "use strict";
 var HOST=document.getElementById("nl-root"); if(!HOST||HOST.shadowRoot) return;
 var R=HOST.attachShadow({mode:"open"});
-R.innerHTML="<style>"+"\n:host{--bg:var(--paper,#f4f7f6);--muted:var(--ink-2,#4a5f5d);--accent:var(--teal,#1d6f68);--accent-ink:var(--on-teal,#fff);--accent-soft:var(--teal-soft,#e2f0ed);--miss:var(--red,#b3372f);--miss-soft:var(--red-soft,#f9e3e0);--font:var(--body,Tahoma,sans-serif)}\nh1,h2,h3{font-family:var(--display,inherit);font-weight:600}\n*,*::before,*::after{box-sizing:border-box}\n:host{display:block;color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.6;margin-top:22px}\n.wrap{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}\nh1{margin:0;font-size:24px;text-wrap:balance}\nh2{margin:0;font-size:16px}\n.sub,.note{color:var(--muted)}\n.note{font-size:13px;margin:0}\n.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:12px;min-width:0}\n.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}\n.field{display:grid;gap:4px;font-size:13px;color:var(--muted)}\ninput,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0;max-width:100%}\nbutton{font:inherit;cursor:pointer}\n:focus-visible{outline:2px solid var(--accent);outline-offset:2px}\n\n/* grade segmented */\n.seg{display:flex;flex-wrap:wrap;gap:6px}\n.seg button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:7px 16px}\n.seg button[aria-pressed=\"true\"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}\n.seg button .c{font-size:12px;opacity:.8;margin-inline-start:6px;font-variant-numeric:tabular-nums}\n\n/* section chips */\n.chips{display:flex;flex-wrap:wrap;gap:6px}\n.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:5px 10px;font-size:14px;cursor:pointer;user-select:none}\n.chip input{margin:0;accent-color:var(--accent)}\n.chip.on{border-color:var(--accent);background:var(--accent-soft)}\n.chip .c{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}\n\n/* upload slot */\n.slot{border:2px dashed var(--line);border-radius:14px;padding:26px 16px;text-align:center;display:grid;gap:6px;cursor:pointer;background:var(--card)}\n.slot:hover,.slot.over{border-color:var(--accent);background:var(--accent-soft)}\n.slot .t{font-size:18px;font-weight:700}\n.slot .f{font-size:13px;color:var(--muted);overflow-wrap:anywhere}\n.slot .f b{color:var(--ink)}\n.slot input{display:none}\n\n/* actions */\n.actions{display:flex;flex-wrap:wrap;gap:8px}\n.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:9px 16px;font-weight:600;display:inline-flex;gap:8px;align-items:center}\n.btn .x{font-size:11px;font-weight:700;border-radius:4px;padding:1px 5px;color:#fff}\n.btn:disabled{opacity:.45;cursor:not-allowed}\n.x.pdf{background:#B42318}.x.doc{background:#2B579A}.x.xls{background:#217346}.x.prn{background:#5B6770}\n.check{display:inline-flex;gap:6px;align-items:center;font-size:14px}\n\n/* report preview */\n.report{display:grid;gap:14px}\n#repBody{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}\n.report{grid-template-columns:minmax(0,1fr)}\n.grp{min-width:0}\n.rep-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:end;border-bottom:2px solid var(--accent);padding-bottom:10px}\n.rep-head .school{font-weight:700}\n.rep-head .meta{font-size:13px;color:var(--muted);text-align:left}\n.total{font-size:14px}\n.total b{color:var(--miss);font-size:18px;font-variant-numeric:tabular-nums}\n.grp h3{margin:0 0 6px;font-size:15px;display:flex;gap:8px;align-items:center}\n.grp h3 .n{font-size:12px;font-weight:600;background:var(--miss-soft);color:var(--miss);border-radius:999px;padding:1px 10px}\n.scroll{overflow-x:auto}\ntable{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}\nth,td{border:1px solid var(--line);padding:6px 8px;text-align:right;white-space:nowrap}\ntd.name{white-space:normal;min-width:180px}\nth{background:var(--accent-soft);font-weight:600;font-size:13px}\ntd.num{text-align:center;width:44px;color:var(--muted)}\ntd.ltr{direction:ltr;text-align:right}\n.empty{color:var(--muted);text-align:center;padding:28px 12px}\n.err{color:var(--miss);font-size:14px;margin:0}\n.toast{position:fixed;bottom:calc(18px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;font-size:14px;z-index:30}\n.busy{position:fixed;inset:0;background:rgba(0,0,0,.35);display:grid;place-items:center;z-index:40;color:#fff;font-size:16px}\n\n@media (prefers-reduced-motion:no-preference){.slot,.chip,.seg button{transition:background .15s,border-color .15s}}\n[hidden]{display:none!important}\n"+"</style>"+"\n<div class=\"wrap\">\n  <header class=\"row\" style=\"justify-content:space-between;align-items:end\">\n    <div>\n      <h2 style=\"font-size:20px\">الطلاب الذين لم يدخلوا المنصة</h2>\n      <div class=\"sub\" id=\"todayTxt\"></div>\n    </div>\n  </header>\n\n  <!-- 1) Classification before upload -->\n  <section class=\"card\" aria-labelledby=\"fTitle\">\n    <h2 id=\"fTitle\">التصنيف</h2>\n    <div class=\"seg\" id=\"gradeSeg\" role=\"group\" aria-label=\"الصف\">\n      <button type=\"button\" data-g=\"\" aria-pressed=\"true\">الكل<span class=\"c\" id=\"gc-\"></span></button>\n      <button type=\"button\" data-g=\"1\" aria-pressed=\"false\">الأول ثانوي<span class=\"c\" id=\"gc-1\"></span></button>\n      <button type=\"button\" data-g=\"2\" aria-pressed=\"false\">الثاني ثانوي<span class=\"c\" id=\"gc-2\"></span></button>\n      <button type=\"button\" data-g=\"3\" aria-pressed=\"false\">الثالث ثانوي<span class=\"c\" id=\"gc-3\"></span></button>\n    </div>\n    <div class=\"row\" style=\"justify-content:space-between\">\n      <span class=\"note\">الشعب الدراسية</span>\n      <span class=\"row\" style=\"gap:6px\">\n        <button type=\"button\" class=\"btn\" id=\"secAll\" style=\"padding:4px 10px;font-weight:500;font-size:13px\">تحديد الكل</button>\n        <button type=\"button\" class=\"btn\" id=\"secNone\" style=\"padding:4px 10px;font-weight:500;font-size:13px\">إلغاء التحديد</button>\n      </span>\n    </div>\n    <div class=\"chips\" id=\"secChips\"><span class=\"note\">تظهر الشعب هنا بعد قراءة الملف.</span></div>\n  </section>\n\n  <!-- 2) The single upload slot -->\n  <label class=\"slot\" id=\"slot\" for=\"inFile\">\n    <span class=\"t\">ملف الطلاب الذين لم يدخلوا المنصة</span>\n    <span class=\"note\">ضع الملف هنا أو اضغط للاختيار · Excel أو Word (xlsx · xls · csv · docx)</span>\n    <span class=\"f\" id=\"fileTxt\">لم يُرفع ملف</span>\n    <input type=\"file\" id=\"inFile\" accept=\".xlsx,.xls,.csv,.docx\">\n  </label>\n  <p class=\"err\" id=\"err\" hidden></p>\n\n  <!-- 3) Save / print -->\n  <section class=\"card\" aria-labelledby=\"aTitle\">\n    <div class=\"row\" style=\"justify-content:space-between\">\n      <h2 id=\"aTitle\">الحفظ والطباعة</h2>\n      <label class=\"check\" for=\"optSplit\"><input type=\"checkbox\" id=\"optSplit\" checked> جدول مستقل لكل شعبة</label>\n    </div>\n    <div class=\"row\" style=\"gap:6px 14px\">\n      <span class=\"note\">البيانات الظاهرة:</span>\n      <span class=\"chips\" id=\"colPick\"><span class=\"note\">تظهر بعد قراءة الملف</span></span>\n    </div>\n    <div class=\"row\">\n      <label class=\"field\" for=\"school\">اسم المدرسة <input id=\"school\" value=\"ثانوية بلاط الشهداء بجدة\" style=\"width:240px\"></label>\n      <label class=\"field\" for=\"day\">التاريخ <input type=\"date\" id=\"day\"></label>\n    </div>\n    <div class=\"actions\">\n      <button class=\"btn\" id=\"bPdf\" type=\"button\" disabled><span class=\"x pdf\">PDF</span>حفظ PDF</button>\n      <button class=\"btn\" id=\"bDoc\" type=\"button\" disabled><span class=\"x doc\">W</span>حفظ Word</button>\n      <button class=\"btn\" id=\"bXls\" type=\"button\" disabled><span class=\"x xls\">X</span>حفظ Excel</button>\n      <button class=\"btn\" id=\"bPrn\" type=\"button\" disabled><span class=\"x prn\">⎙</span>طباعة</button>\n    </div>\n  </section>\n\n  <!-- 4) Result -->\n  <section class=\"card report\" id=\"report\" aria-live=\"polite\">\n    <div class=\"empty\" id=\"emptyBox\">\n      ضع ملف الطلاب الذين لم يدخلوا المنصة في الخانة أعلاه، وستظهر أسماؤهم هنا حسب الصف والشعبة.\n      <div style=\"margin-top:10px\"><button type=\"button\" class=\"btn\" id=\"bSample\" style=\"font-weight:500\">عرض مثال</button></div>\n    </div>\n    <div id=\"repBody\" hidden></div>\n  </section>\n\n  <p class=\"note\">يُقرأ الملف داخل جهازك فقط ولا يُرفع إلى أي مكان.</p>\n</div>\n<div class=\"toast\" id=\"toast\" hidden></div>\n<div class=\"busy\" id=\"busy\" hidden>جارٍ تجهيز الملف…</div>\n\n";
+R.innerHTML="<style>"+"\n:host{--bg:var(--paper,#f4f7f6);--muted:var(--ink-2,#4a5f5d);--accent:var(--teal,#1d6f68);--accent-ink:var(--on-teal,#fff);--accent-soft:var(--teal-soft,#e2f0ed);--miss:var(--red,#b3372f);--miss-soft:var(--red-soft,#f9e3e0);--font:var(--body,Tahoma,sans-serif)}\nh1,h2,h3{font-family:var(--display,inherit);font-weight:600}\n*,*::before,*::after{box-sizing:border-box}\n:host{display:block;color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.6;margin-top:22px}\n.wrap{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}\nh1{margin:0;font-size:24px;text-wrap:balance}\nh2{margin:0;font-size:16px}\n.sub,.note{color:var(--muted)}\n.note{font-size:13px;margin:0}\n.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:12px;min-width:0}\n.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}\n.field{display:grid;gap:4px;font-size:13px;color:var(--muted)}\ninput,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0;max-width:100%}\nbutton{font:inherit;cursor:pointer}\n:focus-visible{outline:2px solid var(--accent);outline-offset:2px}\n\n/* grade segmented */\n.seg{display:flex;flex-wrap:wrap;gap:6px}\n.seg button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:7px 16px}\n.seg button[aria-pressed=\"true\"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}\n.seg button .c{font-size:12px;opacity:.8;margin-inline-start:6px;font-variant-numeric:tabular-nums}\n\n/* section chips */\n.chips{display:flex;flex-wrap:wrap;gap:6px}\n.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:5px 10px;font-size:14px;cursor:pointer;user-select:none}\n.chip input{margin:0;accent-color:var(--accent)}\n.chip.on{border-color:var(--accent);background:var(--accent-soft)}\n.chip .c{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}\n\n/* upload slot */\n.slot{border:2px dashed var(--line);border-radius:14px;padding:26px 16px;text-align:center;display:grid;gap:6px;cursor:pointer;background:var(--card)}\n.slot:hover,.slot.over{border-color:var(--accent);background:var(--accent-soft)}\n.slot .t{font-size:18px;font-weight:700}\n.slot .f{font-size:13px;color:var(--muted);overflow-wrap:anywhere}\n.slot .f b{color:var(--ink)}\n.slot input{display:none}\n\n/* actions */\n.actions{display:flex;flex-wrap:wrap;gap:8px}\n.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:9px 16px;font-weight:600;display:inline-flex;gap:8px;align-items:center}\n.btn .x{font-size:11px;font-weight:700;border-radius:4px;padding:1px 5px;color:#fff}\n.btn:disabled{opacity:.45;cursor:not-allowed}\n.x.pdf{background:#B42318}.x.doc{background:#2B579A}.x.xls{background:#217346}.x.prn{background:#5B6770}\n.check{display:inline-flex;gap:6px;align-items:center;font-size:14px}\n\n/* report preview */\n.report{display:grid;gap:14px}\n#repBody{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}\n.report{grid-template-columns:minmax(0,1fr)}\n.grp{min-width:0}\n.rep-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:end;border-bottom:2px solid var(--accent);padding-bottom:10px}\n.rep-head .school{font-weight:700}\n.rep-head .meta{font-size:13px;color:var(--muted);text-align:left}\n.total{font-size:14px}\n.total b{color:var(--miss);font-size:18px;font-variant-numeric:tabular-nums}\n.grp h3{margin:0 0 6px;font-size:15px;display:flex;gap:8px;align-items:center}\n.grp h3 .n{font-size:12px;font-weight:600;background:var(--miss-soft);color:var(--miss);border-radius:999px;padding:1px 10px}\n.scroll{overflow-x:auto}\ntable{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}\nth,td{border:1px solid var(--line);padding:6px 8px;text-align:right;white-space:nowrap}\ntd.name{white-space:normal;min-width:180px}\nth{background:var(--accent-soft);font-weight:600;font-size:13px}\ntd.num{text-align:center;width:44px;color:var(--muted)}\ntd.ltr{direction:ltr;text-align:right}\n.empty{color:var(--muted);text-align:center;padding:28px 12px}\n.err{color:var(--miss);font-size:14px;margin:0}\n.toast{position:fixed;bottom:calc(18px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;font-size:14px;z-index:30}\n.busy{position:fixed;inset:0;background:rgba(0,0,0,.35);display:grid;place-items:center;z-index:40;color:#fff;font-size:16px}\n\n@media (prefers-reduced-motion:no-preference){.slot,.chip,.seg button{transition:background .15s,border-color .15s}}\n[hidden]{display:none!important}\n"+"</style>"+"\n<div class=\"wrap\">\n  <header class=\"row\" style=\"justify-content:space-between;align-items:end\">\n    <div>\n      <h2 style=\"font-size:20px\">الطلاب الذين لم يدخلوا المنصة</h2>\n      <div class=\"sub\" id=\"todayTxt\"></div>\n    </div>\n  </header>\n\n  <!-- 1) Classification before upload -->\n  <section class=\"card\" aria-labelledby=\"fTitle\">\n    <h2 id=\"fTitle\">التصنيف</h2>\n    <div class=\"seg\" id=\"gradeSeg\" role=\"group\" aria-label=\"الصف\">\n      <button type=\"button\" data-g=\"\" aria-pressed=\"true\">الكل<span class=\"c\" id=\"gc-\"></span></button>\n      <button type=\"button\" data-g=\"1\" aria-pressed=\"false\">الأول ثانوي<span class=\"c\" id=\"gc-1\"></span></button>\n      <button type=\"button\" data-g=\"2\" aria-pressed=\"false\">الثاني ثانوي<span class=\"c\" id=\"gc-2\"></span></button>\n      <button type=\"button\" data-g=\"3\" aria-pressed=\"false\">الثالث ثانوي<span class=\"c\" id=\"gc-3\"></span></button>\n    </div>\n    <div class=\"row\" style=\"justify-content:space-between\">\n      <span class=\"note\">الشعب الدراسية</span>\n      <span class=\"row\" style=\"gap:6px\">\n        <button type=\"button\" class=\"btn\" id=\"secAll\" style=\"padding:4px 10px;font-weight:500;font-size:13px\">تحديد الكل</button>\n        <button type=\"button\" class=\"btn\" id=\"secNone\" style=\"padding:4px 10px;font-weight:500;font-size:13px\">إلغاء التحديد</button>\n      </span>\n    </div>\n    <div class=\"chips\" id=\"secChips\"><span class=\"note\">تظهر الشعب هنا بعد قراءة الملف.</span></div>\n  </section>\n\n  <!-- 2) The single upload slot -->\n  <label class=\"slot\" id=\"slot\" for=\"inFile\">\n    <span class=\"t\">ملف الطلاب الذين لم يدخلوا المنصة</span>\n    <span class=\"note\">ضع الملف هنا أو اضغط للاختيار · Excel أو Word أو PDF</span>\n    <span class=\"f\" id=\"fileTxt\">لم يُرفع ملف</span>\n    <input type=\"file\" id=\"inFile\" accept=\".xlsx,.xls,.xlsm,.csv,.docx,.pdf\">\n  </label>\n  <p class=\"err\" id=\"err\" hidden></p>\n\n  <!-- 3) Save / print -->\n  <section class=\"card\" aria-labelledby=\"aTitle\">\n    <div class=\"row\" style=\"justify-content:space-between\">\n      <h2 id=\"aTitle\">الحفظ والطباعة</h2>\n      <label class=\"check\" for=\"optSplit\"><input type=\"checkbox\" id=\"optSplit\" checked> جدول مستقل لكل شعبة</label>\n    </div>\n    <div class=\"row\" style=\"gap:6px 14px\">\n      <span class=\"note\">البيانات الظاهرة:</span>\n      <span class=\"chips\" id=\"colPick\"><span class=\"note\">تظهر بعد قراءة الملف</span></span>\n    </div>\n    <div class=\"row\">\n      <label class=\"field\" for=\"school\">اسم المدرسة <input id=\"school\" value=\"ثانوية بلاط الشهداء بجدة\" style=\"width:240px\"></label>\n      <label class=\"field\" for=\"day\">التاريخ <input type=\"date\" id=\"day\"></label>\n    </div>\n    <div class=\"actions\">\n      <button class=\"btn\" id=\"bPdf\" type=\"button\" disabled><span class=\"x pdf\">PDF</span>حفظ PDF</button>\n      <button class=\"btn\" id=\"bDoc\" type=\"button\" disabled><span class=\"x doc\">W</span>حفظ Word</button>\n      <button class=\"btn\" id=\"bXls\" type=\"button\" disabled><span class=\"x xls\">X</span>حفظ Excel</button>\n      <button class=\"btn\" id=\"bPrn\" type=\"button\" disabled><span class=\"x prn\">⎙</span>طباعة</button>\n    </div>\n  </section>\n\n  <!-- 4) Result -->\n  <section class=\"card report\" id=\"report\" aria-live=\"polite\">\n    <div class=\"empty\" id=\"emptyBox\">\n      ضع ملف الطلاب الذين لم يدخلوا المنصة في الخانة أعلاه، وستظهر أسماؤهم هنا حسب الصف والشعبة.\n      <div style=\"margin-top:10px\"><button type=\"button\" class=\"btn\" id=\"bSample\" style=\"font-weight:500\">عرض مثال</button></div>\n    </div>\n    <div id=\"repBody\" hidden></div>\n  </section>\n\n  <p class=\"note\">يُقرأ الملف داخل جهازك فقط ولا يُرفع إلى أي مكان.</p>\n</div>\n<div class=\"toast\" id=\"toast\" hidden></div>\n<div class=\"busy\" id=\"busy\" hidden>جارٍ تجهيز الملف…</div>\n\n";
 var gst=document.createElement("style"); gst.textContent="/* A4 pages used for PDF and printing */\n#nl-pages{position:absolute;top:0;left:-20000px}\n#nl-pages .page{width:794px;height:1123px;padding:44px 46px 56px;background:#fff;color:#111;position:relative;overflow:hidden;font-family:\"IBM Plex Sans Arabic\",Tahoma,\"Segoe UI\",Arial,sans-serif;font-size:14px;line-height:1.5;direction:rtl}\n#nl-pages .page .ph{display:flex;justify-content:space-between;align-items:end;border-bottom:2px solid #0F6B63;padding-bottom:8px;margin-bottom:12px}\n#nl-pages .page .ph .s{font-weight:700;font-size:15px}\n#nl-pages .page .ph .m{font-size:12px;color:#444;text-align:left}\n#nl-pages .page h1{font-size:20px;text-align:center;margin:4px 0 2px}\n#nl-pages .page .flt{text-align:center;font-size:13px;color:#333;margin-bottom:12px}\n#nl-pages .page h3{font-size:14px;margin:12px 0 4px;color:#0F6B63}\n#nl-pages .page table{width:100%;border-collapse:collapse;table-layout:fixed}\n#nl-pages .page td{overflow-wrap:anywhere}\n#nl-pages .page td img{max-width:100%;height:auto}\n#nl-pages .page th,#nl-pages .page td{border:1px solid #9AA5A3;padding:4px 6px;font-size:13px;text-align:right}\n#nl-pages .page th{background:#E2EFEC}\n#nl-pages .page td.num{text-align:center;color:#333}\n#nl-pages.dense .page th,#nl-pages.dense .page td{font-size:11px;padding:3px 4px}\n#nl-pages .page .pf{position:absolute;bottom:22px;left:46px;right:46px;display:flex;justify-content:space-between;font-size:11px;color:#555;border-top:1px solid #ccc;padding-top:6px}\n\n@media print{\n  @page{size:A4;margin:0}\n  body.nl-print{background:#fff!important;padding:0!important;margin:0!important}\n  body.nl-print>*:not(#nl-pages){display:none!important}\n  body.nl-print #nl-pages{position:static;left:auto}\n  #nl-pages .page{page-break-after:always;break-after:page}\n  #nl-pages .page:last-child{page-break-after:auto;break-after:auto}\n}\n"; document.head.appendChild(gst);
 var PAGES=document.createElement("div"); PAGES.id="nl-pages"; PAGES.setAttribute("aria-hidden","true"); document.body.appendChild(PAGES);
 
@@ -14,7 +14,7 @@ var $=function(id){return R.getElementById(id);};
 var GL={"1":"الأول ثانوي","2":"الثاني ثانوي","3":"الثالث ثانوي"};
 var OPT=[{k:"id",t:"رقم الهوية"},{k:"phone",t:"الجوال"},{k:"user",t:"اسم المستخدم"},{k:"last",t:"آخر دخول"}];
 var LTR={id:1,phone:1,user:1,last:1};
-var students=[], fileName="", grade="", selSecs=new Set(), has={}, show={};
+var lastInfo=null, students=[], fileName="", grade="", selSecs=new Set(), has={}, show={};
 
 /* ---------- helpers ---------- */
 function latin(s){return String(s).replace(/[٠-٩]/g,function(c){return String(c.charCodeAt(0)-0x0660);}).replace(/[۰-۹]/g,function(c){return String(c.charCodeAt(0)-0x06F0);});}
@@ -187,23 +187,101 @@ function applyLogin(all){
   var list=all.filter(function(x,i){var k=keys[i]; return !k||k<ref;});
   return {list:list,full:true,total:all.length,refTxt:refTxt,refGreg:refGreg};
 }
+/* platform-list rows from a PDF read by Core.makeExtractor (glyph runs with x, x2, y; Arabic in visual order) */
+function nlRowsFromPdfPages(pages){
+  var AR=/[؀-ۿﭐ-﷿ﹰ-﻿]/;
+  function logical(gl){ // visual glyph run (left->right) -> logical text, RTL paragraph
+    var segs=[]; gl.forEach(function(g){ var t=AR.test(g.str)?"a":(/^\s+$/.test(g.str)?"s":"l"); var L=segs[segs.length-1]; if(L&&L.t===t) L.g.push(g); else segs.push({t:t,g:[g]}); });
+    for(var i=1;i<segs.length-1;i++){ if(segs[i].t==="s"&&segs[i-1].t==="l"&&segs[i+1].t==="l"){ segs[i-1].g=segs[i-1].g.concat(segs[i].g,segs[i+1].g); segs.splice(i,2); i--; } }
+    if(!segs.some(function(s){return s.t==="a";})) return [gl.map(function(g){return g.str;}).join("")];
+    return segs.reverse().map(function(s){ return (s.t==="a"?s.g.slice().reverse():s.g).map(function(g){return g.str;}).join(""); });
+  }
+  var MON=/محرم|صفر|ربيع|جماد|رجب|شعبان|رمضان|شوال|القعد|الحج/;
+  var out=[["م","رقم الهوية","الاسم","اسم المستخدم","الجوال","الفصل","آخر دخول"]], seen=0;
+  pages.forEach(function(pg){
+    var runs=(pg.runs||[]).filter(function(r){return r.str!=null&&r.str!=="";});
+    var rows=[]; runs.forEach(function(r){ var R=rows.find(function(x){return Math.abs(x.y-r.y)<1.2;}); if(R) R.r.push(r); else rows.push({y:r.y,r:[r]}); });
+    rows.sort(function(a,b){return a.y-b.y;}).forEach(function(R){
+      // drawing order -> chunks: a new chunk when x jumps back or a visible gap opens
+      var chunks=[], cur=[];
+      R.r.forEach(function(g){ var p=cur[cur.length-1];
+        if(p&&(g.x<p.x-0.5||(g.x-(p.x2!=null?p.x2:p.x))>2.6)){ chunks.push(cur); cur=[]; }
+        cur.push(g); });
+      if(cur.length) chunks.push(cur);
+      var pieces=[]; chunks.forEach(function(c){ var t=logical(c).join(" ").replace(/\s+/g," ").trim(); if(t) pieces.push({t:t,x:c[0].x}); });
+      var all=pieces.map(function(p){return p.t;}).join(" | ");
+      var idm=all.match(/(?:^|\D)(\d{10})(?:\D|$)/)||(pieces.length>3&&/^\d{1,4}$/.test(pieces[0].t)&&/^\d{5,10}$/.test(pieces[1].t)?[0,pieces[1].t]:null); if(!idm) return;
+      var rec={serial:"",id:idm[1],name:[],user:"",phone:"",grade:"",sec:"",last:""}, nums=[];
+      pieces.forEach(function(p){
+        var t=p.t;
+        if(t.indexOf("@")>=0){ var em=t.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+/); if(em){ rec.user=em[0]; t=t.replace(em[0]," "); } }
+        if(/لم\s*يتم\s*الدخول|لم\s*يدخل/.test(t)){ rec.last="لم يتم الدخول"; t=t.replace(/لم\s*يتم\s*الدخول|لم\s*يدخل/," "); }
+        if(MON.test(t)&&/\d{3,4}/.test(t)&&t.replace(/[\d\/\s.\-]/g,"").length<=16){ rec.last=t.replace(/\s+/g," ").trim(); return; }
+        var gm=t.match(/(أول|اول|ثاني|ثالث)\s*ش?/); if(gm&&/ش/.test(t)){ rec.grade=gm[1]; t=t.replace(gm[0]," ").replace(/ش/," "); }
+        (t.match(/\d+/g)||[]).forEach(function(d){ nums.push({d:d,x:p.x}); });
+        t=t.replace(/[\d|]+/g," ").replace(/\s+/g," ").trim();
+        if(t&&AR.test(t)&&!/^ش$/.test(t)) rec.name.push(t);
+      });
+      var longs=[];
+      nums.forEach(function(n){
+        var d=n.d;
+        if(d===rec.id) return;
+        if(d.length>=9){ longs.push(d); return; }
+        if(d.length<=4&&!rec.serial&&n.x<pieces[0].x+1){ rec.serial=d; return; }
+        if(d.length<=2&&!rec.sec){ rec.sec=d; return; }
+        if(d.length<=4&&!rec.serial) rec.serial=d;
+      });
+      longs.forEach(function(d){
+        var ph=d.match(/^(9665\d{8}|05\d{8})(\d{1,2})$/);
+        if(ph&&!rec.sec&&rec.grade){ rec.phone=rec.phone||ph[1]; rec.sec=ph[2]; return; }
+        if(!rec.phone) rec.phone=d;
+      });
+      seen++;
+      out.push([rec.serial||String(seen),rec.id,rec.name.join(" "),rec.user,rec.phone,rec.grade?(rec.grade+" ش "+rec.sec).trim():"",rec.last]);
+    });
+  });
+  return seen?out:[];
+}
+
+function hasCore(){ return typeof Core!=="undefined"&&typeof PDFLib!=="undefined"; }
+function readPdfBuf(buf){
+  if(!hasCore()) return Promise.reject(new Error("قراءة PDF متاحة داخل موقع التقرير فقط."));
+  return Core.makeExtractor(PDFLib).extract(new Uint8Array(buf)).then(nlRowsFromPdfPages);
+}
+function looksPlatform(rows){
+  // a platform list: rows with a username/email or a «last login» value
+  var recs=rows.filter(function(r){return Array.isArray(r);}), hits=0, n=0;
+  recs.forEach(function(r){ var t=r.join(" "); if(/\d{5,10}/.test(t)){ n++; if(/@|لم\s*يتم\s*الدخول|آخر\s*دخول/.test(t)) hits++; } });
+  var hdr=recs.some(function(r){ var h=headerOf(r.map(str)); return h&&(h.user!=null||h.last!=null); });
+  return (hdr&&n>0)||(n>=3&&hits>=n*0.5);
+}
+function loadRows(rows,name){
+  var all=extract(rows);
+  if(!all.length) throw new Error("لم أجد أسماء طلاب في «"+name+"». تأكد أن فيه عمودًا عنوانه «اسم الطالب» أو «الاسم».");
+  var info=applyLogin(all);
+  setData(info.list,name,info);
+  var out={name:name,total:all.length,missing:info.list.length,full:info.full,refTxt:info.refTxt||""};
+  try{document.dispatchEvent(new CustomEvent("nologin:data",{detail:out}));}catch(e){}
+  return out;
+}
 function loadFileP(file){
   var n=file.name.toLowerCase();
   if(/\.doc$/.test(n)) return Promise.reject(new Error("صيغة Word القديمة (.doc) غير مدعومة. افتح الملف في Word واحفظه بصيغة .docx ثم ارفعه."));
-  if(/\.pdf$/.test(n)) return Promise.reject(new Error("ملف الطلاب الغائبين عن المنصة يكون Excel أو Word، وليس PDF."));
   if(file.size>25*1024*1024) return Promise.reject(new Error("الملف «"+file.name+"» أكبر من 25 ميجابايت."));
   return file.arrayBuffer().then(function(buf){
+    var b=new Uint8Array(buf.slice(0,4));
+    var isPdf=/\.pdf$/.test(n)||(b[0]===0x25&&b[1]===0x50&&b[2]===0x44&&b[3]===0x46);
+    if(isPdf) return readPdfBuf(buf);
     return /\.docx$/.test(n)?readDocx(buf):readExcel(buf,/\.csv$/.test(n));
-  }).catch(function(){throw new Error("تعذّرت قراءة «"+file.name+"». تأكد أنه Excel أو Word (docx) وغير محمي بكلمة مرور.");})
-  .then(function(rows){
-    var all=extract(rows);
-    if(!all.length) throw new Error("لم أجد أسماء طلاب في «"+file.name+"». تأكد أن فيه عمودًا عنوانه «اسم الطالب» أو «الاسم».");
-    var info=applyLogin(all);
-    setData(info.list,file.name,info);
-    var out={name:file.name,total:all.length,missing:info.list.length,full:info.full,refTxt:info.refTxt||""};
-    try{document.dispatchEvent(new CustomEvent("nologin:data",{detail:out}));}catch(e){}
-    return out;
-  });
+  }).catch(function(e){throw new Error((e&&/[\u0600-\u06FF]/.test(e.message||""))?e.message:"تعذّرت قراءة «"+file.name+"». تأكد أنه Excel أو Word أو PDF سليم وغير محمي بكلمة مرور.");})
+  .then(function(rows){ return loadRows(rows,file.name); });
+}
+function tryPages(pages,name){
+  try{ var rows=nlRowsFromPdfPages(pages); if(rows.length>1&&looksPlatform(rows)) return Promise.resolve(loadRows(rows,name)); }catch(e){ console.error(e); }
+  return Promise.resolve(null);
+}
+function tryDocx(bytes,name){
+  return readDocx(bytes).then(function(rows){ return looksPlatform(rows)?loadRows(rows,name):null; }).catch(function(){return null;});
 }
 function handleFile(file){
   showErr("");
@@ -222,9 +300,10 @@ function setData(list,name){
   has={}; show={}; OPT.forEach(function(o){has[o.k]=students.some(function(x){return x[o.k];}); show[o.k]=has[o.k];});
   selSecs=new Set(students.map(secKey));
   var inf=arguments[2];
-  $("fileTxt").innerHTML="<b>"+esc(name)+"</b> · "+(inf&&inf.full?
+  lastInfo=inf||{full:false,total:list.length};
+  $("fileTxt").innerHTML="<b>"+esc(name)+"</b> · "+(inf&&inf.full&&inf.total!==students.length?
     ("في الملف "+inf.total+" طالب · دخل "+(inf.total-students.length)+" · <b style=\"color:var(--miss)\">لم يدخل "+students.length+"</b>"+(inf.refTxt?" (حسب آخر دخول بتاريخ "+esc(inf.refTxt)+")":"")):
-    (students.length+" طالب"));
+    ("<b style=\"color:var(--miss)\">"+students.length+" طالبًا لم يدخلوا المنصة</b>"));
   if(inf&&inf.refGreg) $("day").value=inf.refGreg;
   render();
 }
@@ -488,12 +567,15 @@ function appendDocx(Z,bytes,meta){
 }
 window.NoLogin={
   loadFile:loadFileP,
+  tryPages:tryPages,
+  tryDocx:tryDocx,
   count:function(){return students.length?visible().length:0;},
   hasData:function(){return students.length>0;},
+  stats:function(){ if(!students.length||!lastInfo) return null; return {full:!!(lastInfo.full&&lastInfo.total!==students.length),total:lastInfo.total,absent:students.length}; },
   summary:function(){return students.length?filterText():"";},
   formGroups:formGroups,
   appendDocx:appendDocx,
-  clear:function(){ students=[]; fileName=""; selSecs=new Set(); has={}; show={}; $("fileTxt").textContent="لم يُرفع ملف"; showErr(""); render();
+  clear:function(){ students=[]; fileName=""; lastInfo=null; selSecs=new Set(); has={}; show={}; $("fileTxt").textContent="لم يُرفع ملف"; showErr(""); render();
     try{document.dispatchEvent(new CustomEvent("nologin:cleared"));}catch(e){} }
 };
 
