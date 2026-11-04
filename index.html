@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<title>تقرير الحضور والتحضير</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="assets/app.css?v=154eda2c7372">
+</head>
+<body>
+<div class="wrap" dir="rtl" lang="ar">
+  <header class="top">
+    <div>
+      <h1>تقرير الحضور والتحضير</h1>
+      <p class="sub">ارفع تقريري نقار (تحضير المعلمين وغياب الطلاب) بصيغة PDF أو Word، وتُعبّأ استمارة متابعة التعليم عن بُعد تلقائيًا.</p>
+    </div>
+    <div class="stamp"><span>تاريخ التقرير</span><b id="stampDate"></b></div>
+  </header>
+
+  <section class="panel" aria-labelledby="upTitle">
+    <div class="panel-head">
+      <h2 id="upTitle">الملفات</h2>
+      <span class="note">تقبل كل خانة PDF أو Word. اسحب الملفات معًا إلى أي خانة وسيُتعرّف على كل ملف من محتواه.</span>
+    </div>
+    <div class="slots">
+      <label class="slot" id="slot-form" for="in-form">
+        <span class="lbl">استمارة المتابعة <span class="tag" id="tag-form">Word</span></span>
+        <span class="file" id="name-form">لم يُرفع ملف</span>
+        <input type="file" id="in-form" accept=".docx,.pdf" multiple>
+      </label>
+      <label class="slot" id="slot-teachers" for="in-teachers">
+        <span class="lbl">تحضير دروس المعلمين <span class="tag" id="tag-teachers">PDF / Word</span></span>
+        <span class="file" id="name-teachers">لم يُرفع ملف</span>
+        <input type="file" id="in-teachers" accept=".pdf,.docx" multiple>
+      </label>
+      <label class="slot" id="slot-students" for="in-students">
+        <span class="lbl">غياب الحصص للطلاب <span class="tag" id="tag-students">PDF / Word</span></span>
+        <span class="file" id="name-students">لم يُرفع ملف</span>
+        <input type="file" id="in-students" accept=".pdf,.docx" multiple>
+      </label>
+    </div>
+    <div class="row" style="justify-content:space-between">
+      <p class="status" id="status" role="status"></p>
+      <button class="primary" id="run" disabled>إنشاء التقرير</button>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="fmTitle">
+    <div class="panel-head"><h2 id="fmTitle">بيانات الاستمارة</h2><span class="note">يُضبط التاريخ تلقائيًا: تاريخ اليوم قبل رفع الملفات، ثم تاريخ التقرير من نقار. اختر تاريخًا آخر من التقويم ويتغير اليوم والهجري معه.</span></div>
+    <div class="row">
+      <div class="datefields">
+        <label class="field" for="fGreg">تاريخ التقرير <input type="date" id="fGreg"></label>
+        <div class="hijri-out" aria-live="polite"><span>اليوم والتاريخ الهجري (تلقائي)</span><b id="hijriLong">—</b></div>
+        <label class="field" for="fHijri">تعديل الهجري يدويًا <input id="fHijri" class="w-num" style="width:130px" placeholder="21/5/1448هـ"></label>
+      </div>
+      <label class="field" for="sup">حصص حضرها مشرف المدرسة <input type="number" id="sup" min="0" class="w-num" placeholder="اختياري"></label>
+      <label class="field" for="pri">حصص حضرها مدير المدرسة <input type="number" id="pri" min="0" class="w-num" placeholder="اختياري"></label>
+      <label class="field grow" for="fSupport">الدعم الذي تحتاجه المدرسة (كل سطر بند) <textarea id="fSupport" placeholder="اختياري"></textarea></label>
+    </div>
+  </section>
+
+  <section id="emptyState" class="panel empty-state">
+    <h2>ما الذي يظهر هنا بعد رفع الملفات</h2>
+    <ol>
+      <li>أرقام اليوم: حضور المعلمين والطلاب ونسبهم، والحصص المعدّة من إجمالي الحصص.</li>
+      <li>الاستمارة كاملة للتنزيل Word أو PDF أو للطباعة، ومعها كشف الغائبين في آخرها.</li>
+      <li>جدول الحصص الافتراضية لكل معلم، مع إمكانية تعديل المادة.</li>
+      <li>كشف الطلاب الغائبين مع تصفية حسب عدد الحصص (حصة، حصتان، 3 حصص، أكثر من 3) ودمج شعب كل صف.</li>
+      <li>المعلمون الغائبون، وتنبيهات الحصص غير المعدّة.</li>
+    </ol>
+    <p class="note">تُقرأ الملفات داخل متصفحك فقط ولا تُرفع إلى أي مكان.</p>
+  </section>
+
+  <div id="results" hidden style="display:grid;gap:22px">
+    <section class="datebar" aria-label="تاريخ التقرير">
+      <div><div class="dl">اليوم</div><div class="dd" id="dbDay"></div></div>
+      <span class="sep"></span>
+      <div style="flex:1 1 240px"><div class="dl">التاريخ الهجري</div><div class="dd" id="dbHijri"></div></div>
+      <div><div class="dl">الموافق</div><div class="dg" id="dbGreg"></div></div>
+    </section>
+    <section class="panel" aria-labelledby="stTitle">
+      <div class="panel-head"><h2 id="stTitle">إحصائيات اليوم</h2><div class="exp" data-kind="stats"></div></div>
+      <div class="stats" id="figures"></div>
+    </section>
+
+    <section class="panel form-exp">
+      <div class="panel-head"><h2>الاستمارة المعبّأة</h2><span class="note" id="dlNote"></span></div>
+      <div class="row" style="justify-content:space-between">
+        <div class="exp" data-kind="form"></div>
+        <label class="check" for="addAbsent"><input type="checkbox" id="addAbsent" checked> إضافة كشف الغائبين (حسب التصفية) إلى آخر الاستمارة</label>
+      </div>
+    </section>
+
+    <section style="display:grid;gap:12px">
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tab-t" aria-selected="true" aria-controls="pane-t">الحصص الافتراضية<span class="n" id="n-t"></span></button>
+        <button role="tab" id="tab-s" aria-selected="false" aria-controls="pane-s">الطلاب الغائبون<span class="n" id="n-s"></span></button>
+        <button role="tab" id="tab-a" aria-selected="false" aria-controls="pane-a">غياب المعلمين<span class="n" id="n-a"></span></button>
+        <button role="tab" id="tab-w" aria-selected="false" aria-controls="pane-w">تنبيهات<span class="n" id="n-w"></span></button>
+      </div>
+
+      <div id="pane-t" class="pane" role="tabpanel" aria-labelledby="tab-t">
+        <div class="pane-bar"><p class="note">المادة مستنتجة من عنوان الدرس. الخانات المظللة لم يُتعرّف على مادتها، اكتبها قبل التنزيل.</p><div class="exp" data-kind="lessons"></div></div>
+        <div class="scroll"><table>
+          <thead><tr><th>م</th><th>اسم المعلم</th><th>الصف والشعب</th><th>الحصص</th><th>المادة</th><th>عنوان الدرس</th><th>الحالة</th></tr></thead>
+          <tbody id="tBody"></tbody>
+        </table></div>
+      </div>
+
+      <div id="pane-s" class="pane" role="tabpanel" aria-labelledby="tab-s" hidden>
+        <div class="filters">
+          <div class="pane-bar"><span class="date-mini" id="sDate"></span><span class="note">الكشف والتنزيلات تتبع الاختيارات أدناه</span></div>
+          <fieldset class="buckets" id="buckets">
+            <legend style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;width:100%">عدد حصص الغياب
+              <span class="seg" role="radiogroup" aria-label="طريقة الاختيار">
+                <label for="mMin"><input type="radio" name="bmode" id="mMin" value="min" checked> فأكثر</label>
+                <label for="mExact"><input type="radio" name="bmode" id="mExact" value="exact"> بالعدد نفسه</label>
+              </span>
+              <span class="note" id="modeHint"></span></legend>
+            <label class="bk bk-all" for="bAll"><input type="checkbox" id="bAll" checked> اختيار الكل <b id="cAll"></b></label>
+          </fieldset>
+          <div class="row">
+            <label class="field" for="fGrade">الصف <select id="fGrade"><option value="">الكل</option><option value="أول">أول ثانوي</option><option value="ثاني">ثاني ثانوي</option><option value="ثالث">ثالث ثانوي</option></select></label>
+            <label class="check" for="fPartial"><input type="checkbox" id="fPartial"> إضافة الحاضرين الذين فاتتهم حصص <span class="note" id="partialHint"></span></label>
+            <label class="field" for="fSearch">بحث بالاسم <input id="fSearch" type="search" placeholder="جزء من الاسم"></label>
+            <label class="check" for="fMerge"><input type="checkbox" id="fMerge"> دمج شعب كل صف في كشف واحد (أول / ثاني / ثالث)</label>
+          </div>
+          <div><p class="note" style="margin-bottom:6px">عدد الطلاب حسب الشعبة (اضغط للتصفية)</p><div class="sections" id="secChips"></div></div>
+        </div>
+        <div class="pane-bar"><p class="note" id="sCount"></p><div class="exp" data-kind="students"></div></div>
+        <div class="scroll"><table>
+          <thead><tr><th>م</th><th>اسم الطالب</th><th>الصف</th><th>الشعبة</th><th>عدد حصص الغياب</th><th>الحصص الغائبة</th><th id="thStatus" hidden>الحالة في نقار</th></tr></thead>
+          <tbody id="sBody"></tbody>
+        </table></div>
+      </div>
+
+      <div id="pane-a" class="pane" role="tabpanel" aria-labelledby="tab-a" hidden>
+        <div class="pane-bar"><p class="note">يُحسب المعلم غائبًا إذا لم يُعدّ أي درس. يمكنك تعديل ذلك من خانة «غائب»، ويتغير العدد في الاستمارة تبعًا لذلك.</p><div class="exp" data-kind="teachers"></div></div>
+        <div class="scroll"><table>
+          <thead><tr><th>غائب</th><th>اسم المعلم</th><th>الصف والشعب</th><th>الحصص</th><th>المعدّة</th><th>غير المعدّة</th><th>المادة</th></tr></thead>
+          <tbody id="aBody"></tbody>
+        </table></div>
+      </div>
+
+      <div id="pane-w" class="pane" role="tabpanel" aria-labelledby="tab-w" hidden>
+        <div class="pane-bar"><span></span><div class="exp" data-kind="alerts"></div></div>
+        <div class="panel" id="warnBox"></div>
+      </div>
+    </section>
+    <p class="note">زر «طباعة» يُنزّل ملف PDF بمقاس A4 جاهزًا للطباعة مباشرة، لأن هذه الصفحة لا تستطيع فتح نافذة الطباعة بنفسها.</p>
+  </div>
+</div>
+<footer class="site-foot" dir="rtl" lang="ar">
+  <div class="site-foot-in">
+    <span class="mark" aria-hidden="true"></span>
+    <p>جميع الحقوق محفوظة <span aria-hidden="true">©</span> <b>ثانوية بلاط الشهداء بجدة</b> <span id="copyYear"></span></p>
+  </div>
+</footer>
+<div id="render" aria-hidden="true"></div>
+<div class="busy" id="busy" hidden></div>
+<script src="vendor/pdf-lib.min.js?v=278627f3a5e3"></script>
+<script src="vendor/jszip.min.js?v=7f839b2d4688"></script>
+<script src="vendor/html2canvas.min.js?v=e87e55079432"></script>
+<script src="vendor/jspdf.umd.min.js?v=97cff153c976"></script>
+<script src="assets/core.js?v=637bcd05ad0d"></script>
+<script src="assets/app.js?v=541449a3f7bc"></script>
+</body>
+</html>
