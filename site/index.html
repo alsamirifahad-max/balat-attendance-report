@@ -23,28 +23,28 @@
   <section class="panel" aria-labelledby="upTitle">
     <div class="panel-head">
       <h2 id="upTitle">الملفات</h2>
-      <span class="note">تقبل الخانات PDF أو Word أو Excel. اسحب الملفات معًا إلى أي خانة وسيُتعرّف على كل ملف من محتواه، وملف Excel للطلاب الغائبين عن المنصة يذهب تلقائيًا إلى قسمهم.</span>
+      <span class="note">تقبل كل الخانات PDF أو Word أو Excel، وكل الملفات اختيارية. اسحب الملفات معًا إلى أي خانة وسيُتعرّف على كل ملف من محتواه، وقائمة الطلاب الغائبين عن المنصة تذهب تلقائيًا إلى قسمهم بأي صيغة كانت.</span>
     </div>
     <div class="slots" style="grid-template-columns:repeat(auto-fit,minmax(210px,1fr))">
       <label class="slot" id="slot-form" for="in-form">
         <span class="lbl">استمارة المتابعة <span class="tag" id="tag-form">Word</span></span>
         <span class="file" id="name-form">لم يُرفع ملف</span>
-        <input type="file" id="in-form" accept=".docx,.pdf,.xlsx,.xls,.csv" multiple>
+        <input type="file" id="in-form" accept=".pdf,.docx,.doc,.xlsx,.xls,.xlsm,.csv" multiple>
       </label>
       <label class="slot" id="slot-teachers" for="in-teachers">
         <span class="lbl">تحضير دروس المعلمين <span class="tag" id="tag-teachers">PDF / Word</span></span>
         <span class="file" id="name-teachers">لم يُرفع ملف</span>
-        <input type="file" id="in-teachers" accept=".pdf,.docx,.xlsx,.xls,.csv" multiple>
+        <input type="file" id="in-teachers" accept=".pdf,.docx,.doc,.xlsx,.xls,.xlsm,.csv" multiple>
       </label>
       <label class="slot" id="slot-students" for="in-students">
         <span class="lbl">غياب الحصص للطلاب <span class="tag" id="tag-students">PDF / Word</span></span>
         <span class="file" id="name-students">لم يُرفع ملف</span>
-        <input type="file" id="in-students" accept=".pdf,.docx,.xlsx,.xls,.csv" multiple>
+        <input type="file" id="in-students" accept=".pdf,.docx,.doc,.xlsx,.xls,.xlsm,.csv" multiple>
       </label>
       <label class="slot" id="slot-nologin" for="in-nologin">
-        <span class="lbl">طلاب غائبون (منصة مدرستي) <span class="tag" id="tag-nologin">Excel</span></span>
+        <span class="lbl">طلاب غائبون (منصة مدرستي) <span class="tag" id="tag-nologin">Excel / Word / PDF</span></span>
         <span class="file" id="name-nologin">لم يُرفع ملف</span>
-        <input type="file" id="in-nologin" accept=".xlsx,.xls,.csv,.docx" multiple>
+        <input type="file" id="in-nologin" accept=".pdf,.docx,.doc,.xlsx,.xls,.xlsm,.csv" multiple>
       </label>
     </div>
     <div class="row" style="justify-content:space-between">
@@ -63,6 +63,15 @@
       </div>
       <label class="field" for="sup">حصص حضرها مشرف المدرسة <input type="number" id="sup" min="0" class="w-num" placeholder="اختياري"></label>
       <label class="field" for="pri">حصص حضرها مدير المدرسة <input type="number" id="pri" min="0" class="w-num" placeholder="اختياري"></label>
+      <div class="field" style="display:grid;gap:6px">إحصائية الطلبة في الاستمارة من
+        <span style="display:flex;flex-wrap:wrap;gap:12px" role="radiogroup" aria-label="مصدر إحصائية الطلبة">
+          <label class="check" for="sSrcAuto"><input type="radio" name="sSrc" id="sSrcAuto" value="auto" checked> تلقائي</label>
+          <label class="check" for="sSrcNaqar"><input type="radio" name="sSrc" id="sSrcNaqar" value="naqar"> غياب الحصص (نقار)</label>
+          <label class="check" for="sSrcPlat"><input type="radio" name="sSrc" id="sSrcPlat" value="platform"> طلاب غائبون (منصة مدرستي)</label>
+        </span>
+        <span class="note" id="sSrcNote"></span>
+      </div>
+      <label class="field" for="sTotal" id="sTotalWrap" hidden>إجمالي طلاب المدرسة (لملف من لم يدخل فقط) <input type="number" id="sTotal" min="0" class="w-num" placeholder="مثال 1021"></label>
       <label class="field grow" for="fSupport">الدعم الذي تحتاجه المدرسة (كل سطر بند) <textarea id="fSupport" placeholder="اختياري"></textarea></label>
     </div>
   </section>
@@ -175,8 +184,8 @@
 <script src="vendor/html2canvas.min.js?v=e87e55079432"></script>
 <script src="vendor/jspdf.umd.min.js?v=97cff153c976"></script>
 <script src="assets/core.js?v=637bcd05ad0d"></script>
-<script src="assets/app.js?v=7b5f1b634759"></script>
+<script src="assets/app.js?v=75837807da0c"></script>
 <script src="vendor/xlsx.full.min.js?v=c9506197caf8"></script>
-<script src="assets/no-login.js?v=a3fe0ab7b81c"></script>
+<script src="assets/no-login.js?v=e3a4eb32a8c7"></script>
 </body>
 </html>
