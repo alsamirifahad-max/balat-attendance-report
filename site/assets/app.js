@@ -89,10 +89,19 @@ async function classify(file){
   if(/الحالة|غياب|الطالب/.test(txt)) return {kind:'students',bytes,pages};
   return {kind:null,bytes};
 }
+const isSheet=f=>/\.(xlsx|xls|xlsm|csv)$/i.test(f.name||'');
+let nlMsg='';
 async function addFiles(list,hint){
-  let err='';
+  let err=''; nlMsg='';
   for(const f of list){
     setStatus('جارٍ قراءة '+f.name+' …');
+    if(isSheet(f)||hint==='nologin'){
+      if(!window.NoLogin){ err='تعذّر تحميل قارئ ملف الطلاب الغائبين عن المنصة. أعد تحميل الصفحة.'; continue }
+      try{ const inf=await window.NoLogin.loadFile(f);
+        nlMsg=inf.full?`ملف المنصة: في الملف ${inf.total} طالبًا، لم يدخل منهم ${inf.missing}${inf.refTxt?' (آخر دخول '+inf.refTxt+')':''}. تجدهم في قسم «الطلاب الذين لم يدخلوا المنصة» أسفل الصفحة.`:`ملف المنصة: تمت قراءة ${inf.total} طالبًا.`;
+      }catch(e){ console.error(e); err=(e&&e.message)||('تعذّرت قراءة «'+f.name+'».') }
+      continue;
+    }
     try{
       const r=await classify(f);
       if(r.kind==='formpdf'){ err='الاستمارة بصيغة PDF لا يمكن تعبئتها. ارفعها بصيغة Word، وحتى ذلك الحين تُستخدم الاستمارة المحفوظة.'; continue }
@@ -103,7 +112,8 @@ async function addFiles(list,hint){
     }catch(e){ console.error(e); err=(e&&/[\u0600-\u06FF]/.test(e.message||''))?e.message:'تعذّرت قراءة «'+f.name+'». تأكد أن الملف PDF أو Word سليم.' }
   }
   refreshSlots();
-  if(err) setStatus(err,true); else setStatus($('run').disabled?'ارفع الملفات الناقصة.':'الملفات جاهزة. اضغط «إنشاء التقرير».');
+  if(err) setStatus(err,true); else if(nlMsg&&$('run').disabled) setStatus(nlMsg); else setStatus((nlMsg?nlMsg+' ':'')+($('run').disabled?'ارفع الملفات الناقصة.':'الملفات جاهزة. اضغط «إنشاء التقرير».'));
+  if(model) updateDlNote();
 }
 for(const k of ['form','teachers','students']){
   const slot=$('slot-'+k), inp=$('in-'+k);
@@ -111,6 +121,16 @@ for(const k of ['form','teachers','students']){
   slot.addEventListener('dragover',e=>{e.preventDefault();slot.classList.add('drag')});
   slot.addEventListener('dragleave',()=>slot.classList.remove('drag'));
   slot.addEventListener('drop',e=>{e.preventDefault();slot.classList.remove('drag');addFiles([...e.dataTransfer.files],k)});
+}
+if($('slot-nologin')){
+  const slot=$('slot-nologin'), inp=$('in-nologin');
+  inp.addEventListener('change',()=>{addFiles([...inp.files],'nologin');inp.value=''});
+  slot.addEventListener('dragover',e=>{e.preventDefault();slot.classList.add('drag')});
+  slot.addEventListener('dragleave',()=>slot.classList.remove('drag'));
+  slot.addEventListener('drop',e=>{e.preventDefault();slot.classList.remove('drag');addFiles([...e.dataTransfer.files],'nologin')});
+  document.addEventListener('nologin:data',e=>{ const d=e.detail||{}; slot.classList.add('ok');
+    $('name-nologin').textContent=d.name+(d.full?` — لم يدخل ${d.missing} من ${d.total}`:` — ${d.total} طالبًا`); $('tag-nologin').textContent='جاهز';
+    if(model) updateDlNote() });
 }
 refreshSlots();
 
@@ -242,7 +262,10 @@ function renderWarnings(){
 }
 function updateDlNote(){
   const n=studentList({ignoreSearch:true}).length;
-  $('dlNote').textContent=$('addAbsent').checked?`يُضاف في آخرها كشف بـ ${n} طالبًا حسب تصفية تبويب الطلاب الغائبين.`:'بدون كشف الغائبين.';
+  let t=$('addAbsent').checked?`يُضاف في آخرها كشف بـ ${n} طالبًا حسب تصفية تبويب الطلاب الغائبين.`:'بدون كشف الغائبين.';
+  if($('addNoLogin')){ const NL=window.NoLogin, m=NL&&NL.hasData()?NL.count():0;
+    t+=$('addNoLogin').checked?(NL&&NL.hasData()?` ويُضاف كشف بـ ${m} طالبًا لم يدخلوا المنصة (${NL.summary()}).`:' (لم يُرفع ملف الطلاب الغائبين عن المنصة بعد.)'):' بدون كشف من لم يدخلوا المنصة.'; }
+  $('dlNote').textContent=t;
 }
 const BK_LABEL=['','غائب حصة','غائب حصتين','غائب ٣ حصص','غائب ٤ حصص','غائب ٥ حصص','غائب ٦ حصص','غائب ٧ حصص'];
 const BK_MIN=['','غائب حصة فأكثر','غائب حصتين فأكثر','غائب ٣ حصص فأكثر','غائب ٤ حصص فأكثر','غائب ٥ حصص فأكثر','غائب ٦ حصص فأكثر','غائب ٧ حصص فأكثر'];
@@ -259,6 +282,8 @@ for(const r of ['mMin','mExact']) $(r).addEventListener('change',()=>{ if(isMin(
 $('bAll').addEventListener('input',()=>{ for(let i=1;i<=7;i++) $('b'+i).checked=$('bAll').checked; renderStudents(); updateDlNote() });
 ['fGrade','fPartial','fSearch','fMerge','b1','b2','b3','b4','b5','b6','b7'].forEach(id=>$(id).addEventListener('input',()=>{ $('bAll').checked=[1,2,3,4,5,6,7].every(i=>$('b'+i).checked); renderStudents();updateDlNote()}));
 $('addAbsent').addEventListener('change',updateDlNote);
+if($('addNoLogin')) $('addNoLogin').addEventListener('change',updateDlNote);
+document.addEventListener('nologin:change',()=>{ if(model) updateDlNote() });
 const TABS=[['tab-t','pane-t'],['tab-s','pane-s'],['tab-a','pane-a'],['tab-w','pane-w']];
 for(const [id] of TABS) $(id).addEventListener('click',()=>{for(const [i2,p2] of TABS){$(i2).setAttribute('aria-selected',i2===id);$(p2).hidden=i2!==id}});
 
@@ -329,7 +354,8 @@ async function doExport(kind,fmt,btn){
     } else if(fmt==='docx'){
       busy('تجهيز ملف Word …');
       let bytes;
-      if(kind==='form'){ const r=await Core.fillDocx(JSZip,files.form.bytes.slice(0),exportModel(),{dates:curDate(),supervisor:$('sup').value,principal:$('pri').value,support:SUPPORT(),absentList:$('addAbsent').checked?formAbsentRows():[]}); bytes=r.bytes; if(r.warn.length) setStatus('لم أجد في الاستمارة: '+r.warn.join('، ')+'. عُبّئ الباقي.',true) }
+      if(kind==='form'){ const r=await Core.fillDocx(JSZip,files.form.bytes.slice(0),exportModel(),{dates:curDate(),supervisor:$('sup').value,principal:$('pri').value,support:SUPPORT(),absentList:$('addAbsent').checked?formAbsentRows():[]}); bytes=r.bytes; if(r.warn.length) setStatus('لم أجد في الاستمارة: '+r.warn.join('، ')+'. عُبّئ الباقي.',true);
+        if($('addNoLogin')&&$('addNoLogin').checked&&window.NoLogin&&window.NoLogin.hasData()){ const d=curDate(); bytes=await window.NoLogin.appendDocx(JSZip,bytes,{school:formMeta&&formMeta.school,day:d.day,hijri:d.hijriText}) } }
       else { const sp=listSpec(kind); const d=curDate(); sp.dateText=`اليوم: ${d.day}   |   التاريخ: ${d.hijriLong}   |   الموافق: ${d.gregLong}`; bytes=await Core.makeListDocx(JSZip,files.form.bytes.slice(0),sp) }
       await offer(fname(kind==='form'?'استمارة_المتابعة':NAMES[kind].replace(/\s/g,'_'),'docx'),new Blob([bytes]),'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     } else {
@@ -407,6 +433,8 @@ function buildFormPages(){
   addTable(pages,{headers:['اسم المعلم/ة','الصف','الحصة','المادة','عنوان الدرس'],widths:[2.2,2.2,1,1.6,3.6]},{title:`استمارة متابعة سير العملية التعليمية (حضور حصص افتراضية) ${school} بسبب تعليق الدراسة ليوم ${d.day} الموافق ${d.hijriText}`,rows:model.teachers.map(t=>[t.name,t.cls,t.periods,t.subject,t.title])},'land');
   if($('addAbsent').checked){ const groups=studentGroups(studentList({ignoreSearch:true}));
     groups.forEach(g=>addTable(pages,{headers:['م','اسم الطالب','الصف والشعبة','عدد حصص الغياب','الحصص الغائبة'].concat(withStatus()?['الحالة']:[]),widths:[.5,3,1.6,1,2.6].concat(withStatus()?[1]:[])},{title:`كشف الطلاب الغائبين${g.title?' – '+g.title:''} ${school} ليوم ${d.day} الموافق ${d.hijriText} (${g.rows.length} طالبًا)`,rows:g.rows.map((s,i)=>[i+1,s.name,`${s.grade} ث – ش${s.section}`,cnt(s),s.absent.join('، '),...(withStatus()?[s.status]:[])])},'land')) }
+  if($('addNoLogin')&&$('addNoLogin').checked&&window.NoLogin&&window.NoLogin.hasData()&&window.NoLogin.count()){
+    window.NoLogin.formGroups({school:m.school,day:d.day,hijri:d.hijriText}).forEach(g=>addTable(pages,{headers:g.headers,widths:g.widths},{title:g.title,rows:g.rows},'land')) }
   return pages;
 }
 async function pagesToPdf(pages){

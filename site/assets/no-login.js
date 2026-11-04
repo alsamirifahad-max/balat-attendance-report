@@ -187,20 +187,29 @@ function applyLogin(all){
   var list=all.filter(function(x,i){var k=keys[i]; return !k||k<ref;});
   return {list:list,full:true,total:all.length,refTxt:refTxt,refGreg:refGreg};
 }
-function handleFile(file){
-  showErr("");
+function loadFileP(file){
   var n=file.name.toLowerCase();
-  if(/\.doc$/.test(n)) return showErr("صيغة Word القديمة (.doc) غير مدعومة. افتح الملف في Word واحفظه بصيغة .docx ثم ارفعه.");
-  if(/\.pdf$/.test(n)) return showErr("الخانة تقبل Excel أو Word فقط.");
-  file.arrayBuffer().then(function(buf){
+  if(/\.doc$/.test(n)) return Promise.reject(new Error("صيغة Word القديمة (.doc) غير مدعومة. افتح الملف في Word واحفظه بصيغة .docx ثم ارفعه."));
+  if(/\.pdf$/.test(n)) return Promise.reject(new Error("ملف الطلاب الغائبين عن المنصة يكون Excel أو Word، وليس PDF."));
+  if(file.size>25*1024*1024) return Promise.reject(new Error("الملف «"+file.name+"» أكبر من 25 ميجابايت."));
+  return file.arrayBuffer().then(function(buf){
     return /\.docx$/.test(n)?readDocx(buf):readExcel(buf,/\.csv$/.test(n));
-  }).then(function(rows){
+  }).catch(function(){throw new Error("تعذّرت قراءة «"+file.name+"». تأكد أنه Excel أو Word (docx) وغير محمي بكلمة مرور.");})
+  .then(function(rows){
     var all=extract(rows);
-    if(!all.length) return showErr("لم أجد أسماء طلاب في الملف. تأكد أن فيه عمودًا عنوانه «اسم الطالب» أو «الاسم».");
+    if(!all.length) throw new Error("لم أجد أسماء طلاب في «"+file.name+"». تأكد أن فيه عمودًا عنوانه «اسم الطالب» أو «الاسم».");
     var info=applyLogin(all);
     setData(info.list,file.name,info);
-    toast(info.full?("في الملف "+all.length+" طالب، لم يدخل منهم "+info.list.length):("تمت قراءة "+all.length+" طالب"));
-  }).catch(function(){showErr("تعذّرت قراءة الملف. تأكد أنه Excel أو Word (docx) وغير محمي بكلمة مرور.");});
+    var out={name:file.name,total:all.length,missing:info.list.length,full:info.full,refTxt:info.refTxt||""};
+    try{document.dispatchEvent(new CustomEvent("nologin:data",{detail:out}));}catch(e){}
+    return out;
+  });
+}
+function handleFile(file){
+  showErr("");
+  loadFileP(file).then(function(inf){
+    toast(inf.full?("في الملف "+inf.total+" طالب، لم يدخل منهم "+inf.missing):("تمت قراءة "+inf.total+" طالب"));
+  }).catch(function(e){showErr((e&&e.message)||"تعذّرت قراءة الملف.");});
 }
 
 /* ---------- state & filters ---------- */
@@ -267,6 +276,7 @@ function renderColPick(){
 }
 function render(){
   renderFilters(); renderColPick();
+  try{document.dispatchEvent(new CustomEvent("nologin:change"));}catch(e){}
   var list=visible(), has=students.length>0;
   $("emptyBox").hidden=has; $("repBody").hidden=!has;
   ["bPdf","bDoc","bXls","bPrn"].forEach(function(id){$(id).disabled=!list.length;});
@@ -404,14 +414,18 @@ $("bXls").addEventListener("click",function(){
 function wRun(t,o){o=o||{};var sz=o.sz||24;
   return '<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>'+(o.b?'<w:b/><w:bCs/>':'')+(o.color?'<w:color w:val="'+o.color+'"/>':'')+'<w:sz w:val="'+sz+'"/><w:szCs w:val="'+sz+'"/><w:rtl/></w:rPr><w:t xml:space="preserve">'+xesc(t)+'</w:t></w:r>';}
 function wP(t,o){o=o||{};return '<w:p><w:pPr><w:bidi/>'+(o.center?'<w:jc w:val="center"/>':'')+'<w:spacing w:before="'+(o.before||0)+'" w:after="'+(o.after==null?80:o.after)+'"/></w:pPr>'+wRun(t,o)+'</w:p>';}
-function wTable(items,c){
+function wTableRows(rows,c){
+  var fake=rows.map(function(r){var o={};c.forEach(function(col,j){o["__"+col.k]=r[j];});return o;});
+  return wTable(fake,c,true);
+}
+function wTable(items,c,pre){
   var widths={"#":500,name:3900,id:1700,g:1500,s:800,phone:1700,user:3300,last:1900}, total=c.reduce(function(a,x){return a+widths[x.k];},0), scale=(c.length>6?14838:9906)/total;
   var ws=c.map(function(x){return Math.round(widths[x.k]*scale);});
   var b='<w:top w:val="single" w:sz="4" w:color="9AA5A3"/><w:left w:val="single" w:sz="4" w:color="9AA5A3"/><w:bottom w:val="single" w:sz="4" w:color="9AA5A3"/><w:right w:val="single" w:sz="4" w:color="9AA5A3"/><w:insideH w:val="single" w:sz="4" w:color="9AA5A3"/><w:insideV w:val="single" w:sz="4" w:color="9AA5A3"/>';
   function cell(t,w,head,center){return '<w:tc><w:tcPr><w:tcW w:w="'+w+'" w:type="dxa"/>'+(head?'<w:shd w:val="clear" w:color="auto" w:fill="E2EFEC"/>':'')+'</w:tcPr><w:p><w:pPr><w:bidi/>'+(center?'<w:jc w:val="center"/>':'')+'<w:spacing w:before="20" w:after="20"/></w:pPr>'+wRun(t,{b:head,sz:c.length>6?19:22})+'</w:p></w:tc>';}
   var x='<w:tbl><w:tblPr><w:bidiVisual/><w:tblW w:w="5000" w:type="pct"/><w:tblBorders>'+b+'</w:tblBorders><w:tblCellMar><w:left w:w="80" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>'+ws.map(function(w){return'<w:gridCol w:w="'+w+'"/>';}).join("")+'</w:tblGrid>';
   x+='<w:tr><w:trPr><w:tblHeader/></w:trPr>'+c.map(function(col,i){return cell(col.t,ws[i],true,true);}).join("")+'</w:tr>';
-  items.forEach(function(it,r){x+='<w:tr><w:trPr><w:cantSplit/></w:trPr>'+c.map(function(col,i){return cell(val(it,col.k,r),ws[i],false,col.k==="#");}).join("")+'</w:tr>';});
+  items.forEach(function(it,r){x+='<w:tr><w:trPr><w:cantSplit/></w:trPr>'+c.map(function(col,i){return cell(pre?String(it["__"+col.k]==null?"":it["__"+col.k]):val(it,col.k,r),ws[i],false,col.k==="#");}).join("")+'</w:tr>';});
   return x+'</w:tbl>';
 }
 $("bDoc").addEventListener("click",function(){
@@ -441,6 +455,45 @@ $("bSample").addEventListener("click",function(){
     ["عمر حمد السبيعي","3",1],["بدر صالح العنزي","3",2],["خالد إبراهيم الشمري","3",2],["محمد عادل البقمي","3",3]];
   setData(N.map(function(n,i){return{name:n[0]+" (مثال)",id:String(1100000000+i*7919),phone:"05"+String(10000000+i*731113).slice(0,8),user:"s"+(44100+i*37),last:i%3?"—":"1448/5/10",g:n[1],gRaw:"",s:String(n[2])};}),"بيانات مثال");
 });
+
+/* ---------- public API (used by the main page: top upload slot + the form) ---------- */
+var FW={"#":.5,name:3,id:1.5,g:1.3,s:.7,phone:1.4,user:2.6,last:1.5};
+function formGroups(meta){
+  meta=meta||{}; var list=visible(), c=cols();
+  var when=(meta.day||meta.hijri)?(" ليوم "+(meta.day||"")+(meta.hijri?" الموافق "+meta.hijri:"")):"";
+  var school=meta.school?" – مدرسة "+meta.school:"";
+  return groups(list).map(function(g){
+    return {title:"الطلاب الذين لم يدخلوا المنصة"+(g.title?" – "+g.title:" – "+filterText())+school+when+" ("+g.items.length+" طالبًا)",
+      headers:c.map(function(x){return x.t;}), widths:c.map(function(x){return FW[x.k]||1;}),
+      rows:g.items.map(function(x,i){return c.map(function(col){return val(x,col.k,i);});})};
+  });
+}
+function appendDocx(Z,bytes,meta){
+  var gs=formGroups(meta); if(!gs.length||!visible().length) return Promise.resolve(bytes);
+  var c=cols();
+  return Z.loadAsync(bytes).then(function(z){
+    var f=z.file("word/document.xml"); if(!f) return bytes;
+    return f.async("string").then(function(xml){
+      var body='<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+      gs.forEach(function(g,i){
+        body+=wP(g.title,{b:true,sz:24,color:"0F6B63",before:i?240:0,after:80});
+        body+=wTableRows(g.rows,c);
+      });
+      var at=xml.lastIndexOf("<w:sectPr"); if(at<0) at=xml.lastIndexOf("</w:body>");
+      xml=xml.slice(0,at)+body+xml.slice(at);
+      z.file("word/document.xml",xml);
+      return z.generateAsync({type:"uint8array"});
+    });
+  });
+}
+window.NoLogin={
+  loadFile:loadFileP,
+  count:function(){return students.length?visible().length:0;},
+  hasData:function(){return students.length>0;},
+  summary:function(){return students.length?filterText():"";},
+  formGroups:formGroups,
+  appendDocx:appendDocx
+};
 
 /* ---------- boot ---------- */
 $("day").value=ymd(new Date());
