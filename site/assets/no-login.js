@@ -492,7 +492,9 @@ window.NoLogin={
   hasData:function(){return students.length>0;},
   summary:function(){return students.length?filterText():"";},
   formGroups:formGroups,
-  appendDocx:appendDocx
+  appendDocx:appendDocx,
+  clear:function(){ students=[]; fileName=""; selSecs=new Set(); has={}; show={}; $("fileTxt").textContent="لم يُرفع ملف"; showErr(""); render();
+    try{document.dispatchEvent(new CustomEvent("nologin:cleared"));}catch(e){} }
 };
 
 /* ---------- boot ---------- */

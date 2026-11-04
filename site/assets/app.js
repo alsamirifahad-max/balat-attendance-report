@@ -67,9 +67,13 @@ function refreshSlots(){
   for(const k of ['form','teachers','students']){
     const f=files[k]; $('slot-'+k).classList.toggle('ok',!!f);
     $('name-'+k).textContent=f?(f.builtin?f.name+' — ارفع ملفًا آخر لاستبدالها':f.name):'لم يُرفع ملف';
+    if(f&&!f.builtin){ const x=document.createElement('button'); x.type='button'; x.textContent='إزالة'; x.title='إزالة هذا الملف';
+      x.style.cssText='margin-inline-start:8px;font:inherit;font-size:.8rem;padding:1px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--red);cursor:pointer';
+      x.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation(); if(k==='form'){ files.form=null; formMeta=null; fetch('assets/form.docx',{credentials:'omit',cache:'no-cache'}).then(r=>r.arrayBuffer()).then(b=>{ if(!files.form){ files.form={name:'الاستمارة المحفوظة (بلاط الشهداء)',bytes:new Uint8Array(b),builtin:true}; refreshSlots() } }).catch(()=>{}) } else delete files[k]; refreshSlots(); setStatus('أُزيل الملف. اضغط «إنشاء التقرير» لتحديث النتائج.') });
+      $('name-'+k).appendChild(x) }
     $('tag-'+k).textContent=f?'جاهز':(k==='form'?'Word':'PDF / Word');
   }
-  $('run').disabled=!(files.form&&files.teachers&&files.students);
+  $('run').disabled=!files.form;
 }
 async function classify(file){
   if(file.size>MAX_FILE_BYTES) throw new Error('الملف «'+file.name+'» أكبر من 25 ميجابايت.');
@@ -112,7 +116,7 @@ async function addFiles(list,hint){
     }catch(e){ console.error(e); err=(e&&/[\u0600-\u06FF]/.test(e.message||''))?e.message:'تعذّرت قراءة «'+f.name+'». تأكد أن الملف PDF أو Word سليم.' }
   }
   refreshSlots();
-  if(err) setStatus(err,true); else if(nlMsg&&$('run').disabled) setStatus(nlMsg); else setStatus((nlMsg?nlMsg+' ':'')+($('run').disabled?'ارفع الملفات الناقصة.':'الملفات جاهزة. اضغط «إنشاء التقرير».'));
+  if(err) setStatus(err,true); else if(nlMsg&&$('run').disabled) setStatus(nlMsg); else setStatus((nlMsg?nlMsg+' ':'')+'اضغط «إنشاء التقرير» متى شئت، والملفات كلها اختيارية.');
   if(model) updateDlNote();
 }
 for(const k of ['form','teachers','students']){
@@ -128,8 +132,11 @@ if($('slot-nologin')){
   slot.addEventListener('dragover',e=>{e.preventDefault();slot.classList.add('drag')});
   slot.addEventListener('dragleave',()=>slot.classList.remove('drag'));
   slot.addEventListener('drop',e=>{e.preventDefault();slot.classList.remove('drag');addFiles([...e.dataTransfer.files],'nologin')});
+  document.addEventListener('nologin:cleared',()=>{ slot.classList.remove('ok'); $('name-nologin').textContent='لم يُرفع ملف'; $('tag-nologin').textContent='Excel'; setStatus('أُزيل ملف الطلاب الغائبين عن المنصة.'); if(model) updateDlNote() });
   document.addEventListener('nologin:data',e=>{ const d=e.detail||{}; slot.classList.add('ok');
     $('name-nologin').textContent=d.name+(d.full?` — لم يدخل ${d.missing} من ${d.total}`:` — ${d.total} طالبًا`); $('tag-nologin').textContent='جاهز';
+    const x=document.createElement('button'); x.type='button'; x.textContent='إزالة'; x.style.cssText='margin-inline-start:8px;font:inherit;font-size:.8rem;padding:1px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--red);cursor:pointer';
+    x.addEventListener('click',ev=>{ ev.preventDefault(); ev.stopPropagation(); if(window.NoLogin&&window.NoLogin.clear) window.NoLogin.clear() }); $('name-nologin').appendChild(x);
     if(model) updateDlNote() });
 }
 refreshSlots();
@@ -139,14 +146,19 @@ $('run').addEventListener('click',async()=>{
   try{
     const {extract}=Core.makeExtractor(PDFLib);
     setStatus('قراءة تحضير المعلمين …');
-    let T; const tf=files.teachers;
-    if(tf.docx) T=Core.finishTeachers(Core.parseTeachersDocx(tf.docx));
-    else T=Core.parseTeachers(tf.pages||await extract(tf.bytes.slice(0)));
-    if(!T.teachers.length) throw new Error('لم أجد جدول المعلمين في ملف التحضير. تأكد أنه «تقرير تحضير دروس المعلمين» من نقار.');
+    // every file is optional: a missing report simply contributes nothing
+    let T={teachers:[],raw:{all:0,prepared:0,async:0},dateText:''}; const tf=files.teachers;
+    if(tf){
+      if(tf.docx) T=Core.finishTeachers(Core.parseTeachersDocx(tf.docx));
+      else T=Core.parseTeachers(tf.pages||await extract(tf.bytes.slice(0)));
+      if(!T.teachers.length) throw new Error('لم أجد جدول المعلمين في ملف التحضير. تأكد أنه «تقرير تحضير دروس المعلمين» من نقار، أو احذفه وأنشئ التقرير بدونه.');
+    }
     setStatus('قراءة غياب الطلاب …');
-    let S; const sf=files.students;
-    if(sf.docx) S=Core.parseStudentsDocx(sf.docx); else S=Core.parseStudents(sf.pages||await extract(sf.bytes.slice(0)));
-    if(!S.students.length) throw new Error('لم أجد قائمة الطلاب في ملف الغياب. تأكد أنه «تقرير غياب الحصص للطلاب» من نقار.');
+    let S={students:[],dateText:''}; const sf=files.students;
+    if(sf){
+      if(sf.docx) S=Core.parseStudentsDocx(sf.docx); else S=Core.parseStudents(sf.pages||await extract(sf.bytes.slice(0)));
+      if(!S.students.length) throw new Error('لم أجد قائمة الطلاب في ملف الغياب. تأكد أنه «تقرير غياب الحصص للطلاب» من نقار، أو احذفه وأنشئ التقرير بدونه.');
+    }
     model=Core.buildModel(T,S);
     { const mem=subjMem(); model.teachers.forEach(t=>{ if(!t.subject&&mem[t.name]) t.subject=mem[t.name] }) }
     teacherAbsent=model.teachers.map(t=>!t.present);
@@ -154,7 +166,8 @@ $('run').addEventListener('click',async()=>{
     if(!dateTouched){ hijriManual=false; if(model.dates.gregText||model.dates.hijriText) applyGreg(model.dates.gregText||'',model.dates.hijriText) }
     else if(model.dates.hijriText&&model.dates.hijriText!==curDate().hijriText){ dateNote=` تنبيه: أبقيت التاريخ الذي اخترته (${curDate().day} ${curDate().hijriText})، بينما تاريخ ملفات نقار ${model.dates.day||''} ${model.dates.hijriText}.` }
     render();
-    setStatus(`تمت القراءة: ${model.tStats.total} معلمًا و${model.sStats.total} طالبًا.`+dateNote);
+    const parts=[]; if(tf) parts.push(`${model.tStats.total} معلمًا`); if(sf) parts.push(`${model.sStats.total} طالبًا`); if(window.NoLogin&&window.NoLogin.hasData()) parts.push('ملف الطلاب الغائبين عن المنصة');
+    setStatus((parts.length?'تم إنشاء التقرير من: '+parts.join('، '):'تم إنشاء الاستمارة بدون ملفات نقار، ويمكنك تعبئة بياناتها وتنزيلها')+'.'+dateNote);
   }catch(e){console.error(e);setStatus(e.message||'تعذّرت قراءة الملفات.',true)}
   $('run').disabled=false;
 });
