@@ -304,27 +304,54 @@ function parseTeachers(pages){
 }
 
 // ---------- students ----------
+// period lists: accept digits («1، 3») or ordinal words («الاولى، الثالثة») — Noor uses both
+const PERIOD_ORD={'الاولي':'1','الاولى':'1','الثانيه':'2','الثانية':'2','الثالثه':'3','الثالثة':'3','الرابعه':'4','الرابعة':'4','الخامسه':'5','الخامسة':'5','السادسه':'6','السادسة':'6','السابعه':'7','السابعة':'7','الثامنه':'8','الثامنة':'8'};
+function periodList(s){
+  const a=String(s||'').split(/[،,\n]/).map(x=>x.replace(/[ـ​-‏]/g,'').trim()).filter(Boolean)
+    .map(x=>{ const k=x.replace(/[أإآ]/g,'ا').replace(/^الحصة\s*/,''); return PERIOD_ORD[k]||PERIOD_ORD['ال'+k]||x.replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)) })
+    .filter(x=>x!=='0');
+  const u=[...new Set(a)]; return u.every(x=>/^\d+$/.test(x))?u.sort((x,y)=>x-y):u;
+}
+// status: «غائب»/«حاضر» or the short marks «غ»/«ح»
+function statusOf(s){ s=String(s||'').trim(); if(/غائب/.test(s)||/^غ$/.test(s)) return 'غائب'; if(/حاضر/.test(s)||/^ح$/.test(s)) return 'حاضر'; return '' }
+
 function parseStudents(pages){
   const students=[]; let dateText='';
   pages.forEach((pg,pi)=>{
     const lines=toLines(pg.runs);
     if(pi===0){const h=lines.find(l=>/تقرير/.test(l.text)); if(h) dateText=h.text}
-    const hdrStatus=pg.runs.find(r=>r.str.trim()==='الحالة'); if(!hdrStatus) return;
-    const hy=hdrStatus.y; const vx=verticals(pg);
-    const H={}; for(const r of pg.runs.filter(r=>Math.abs(r.y-hy)<3)) H[r.str.trim()]=cx(r);
+    // header row: the one holding «الطالب» and «الحصص الغائبة» («الحالة» is optional in newer reports)
+    const hName=pg.runs.find(r=>r.str.trim()==='الطالب'); if(!hName) return;
+    const hy=hName.y; const hdrRuns=pg.runs.filter(r=>Math.abs(r.y-hy)<3);
+    if(!hdrRuns.some(r=>/الغائبة/.test(r.str))) return;
+    const vx=verticals(pg);
+    const H={}; for(const r of hdrRuns) H[r.str.trim()]=cx(r);
     const colOf=x=>{let a=-1; for(let i=0;i<vx.length;i++){ if(vx[i]<=x)a=i } return a};
     const key={}; for(const [k,x] of Object.entries(H)) key[colOf(x)]=k;
-    const hs=[...new Set(pg.segs.filter(s=>!s.box&&s.y2-s.y1<2.5&&s.x2-s.x1>100&&s.y1>hy).map(s=>Math.round(s.y1)))].sort((a,b)=>a-b);
+    // the «غ»/«ح» mark sits left of the «الحصص الغائبة» column (sometimes past the page edge)
+    const abX=H['الحصص الغائبة']; const leftEdge=abX!=null&&colOf(abX)>=0?vx[colOf(abX)]:(vx.length?vx[0]:30);
+    let hs=[...new Set(pg.segs.filter(s=>!s.box&&s.y2-s.y1<2.5&&s.x2-s.x1>100&&s.y1>hy).map(s=>Math.round(s.y1)))].sort((a,b)=>a-b);
+    // newer reports draw borders per cell (short segments): fall back to every horizontal border below the header
+    if(hs.length<3){ const ys=[...new Set(pg.segs.filter(s=>!s.box&&s.y2-s.y1<2.5&&s.x2-s.x1>3&&s.y1>hy-1).map(s=>Math.round(s.y1)))].sort((a,b)=>a-b);
+      hs=ys.filter((y,i)=>i===0||y-ys[i-1]>2) }
     for(let i=0;i+1<hs.length;i++){
       const y1=hs[i],y2=hs[i+1]; if(y2-y1<5) continue;
-      const rr=pg.runs.filter(r=>r.y>y1&&r.y<y2); if(!rr.length) continue;
+      const rr=pg.runs.filter(r=>r.y>y1&&r.y<y2&&Math.abs(r.y-hy)>=3); if(!rr.length) continue;
       const byCol={}; for(const r of rr){ const k=key[colOf(cx(r))]; if(!k) continue; (byCol[k]=byCol[k]||[]).push(r) }
       const txt=k=>byCol[k]?toLines(byCol[k],4).map(l=>l.text).join(' '):'';
-      const status=txt('الحالة'); if(!/حاضر|غائب/.test(status)) continue;
-      const cls=txt('الفصل'); const m=cls.match(/(أول|ثاني|ثالث)\s*ش\s*(\d+)/);
-      const list=s=>s.split(/[،,]/).map(x=>x.trim()).filter(x=>x&&x!=='0'&&x!=='٠');
-      students.push({no:+txt('م').replace(/\D/g,''),name:txt('الطالب'),classFull:cls,grade:m?m[1]:'',section:m?+m[2]:null,
-        present:list(txt('الحصص الحاضرة')),absent:list(txt('الحصص الغائبة')),status:/غائب/.test(status)?'غائب':'حاضر'});
+      // status from the «الحالة» column, or from the «غ»/«ح» mark printed outside the table
+      let status=statusOf(txt('الحالة'));
+      if(!status) status=statusOf(rr.filter(r=>cx(r)<leftEdge&&/^[غح]$/.test(r.str.trim())).map(r=>r.str.trim()).join(''));
+      if(!status) continue;
+      const cls=txt('الفصل');
+      const gm=cls.match(/(أول|ثاني|ثالث)\s*ش/);
+      // section number may be split into separate digit runs (e.g. «2» «8» → 28); digits read left-to-right
+      const digitRuns=(byCol['الفصل']||[]).filter(r=>/^\d+$/.test(r.str.trim())).sort((a,b)=>a.x-b.x).map(r=>r.str.trim()).join('');
+      const m=cls.match(/(أول|ثاني|ثالث)\s*ش\s*(\d+)/);
+      const section=digitRuns?+digitRuns:(m?+m[2]:null);
+      const no=(byCol['م']||[]).slice().sort((a,b)=>a.x-b.x).map(r=>r.str.trim()).join('').replace(/\D/g,'');
+      students.push({no:+no,name:txt('الطالب'),classFull:cls,grade:gm?gm[1]:'',section,
+        present:periodList(txt('الحصص الحاضرة')),absent:periodList(txt('الحصص الغائبة')),status});
     }
   });
   return {students,dateText};
@@ -539,12 +566,12 @@ function parseStudentsDocx(c){
     let map=null;
     for(const row of t){
       const txt=row.map(norm);
-      if(txt.includes('الحالة')&&txt.some(x=>/الطالب/.test(x))){ map={}; txt.forEach((h,i)=>{ if(h==='م')map.no=i; else if(/الطالب/.test(h))map.name=i; else if(/الفصل/.test(h))map.cls=i; else if(/الحاضرة/.test(h))map.pr=i; else if(/الغائبة/.test(h))map.ab=i; else if(/الحالة/.test(h))map.st=i }); continue }
+      if(txt.some(x=>/الطالب/.test(x))&&txt.some(x=>/الغائبة/.test(x))){ map={}; txt.forEach((h,i)=>{ if(h==='م')map.no=i; else if(/الطالب/.test(h))map.name=i; else if(/الفصل/.test(h))map.cls=i; else if(/الحاضرة/.test(h))map.pr=i; else if(/الغائبة/.test(h))map.ab=i; else if(/الحالة/.test(h))map.st=i }); continue }
       if(!map) continue;
-      const st=txt[map.st]||''; if(!/حاضر|غائب/.test(st)) continue;
+      const st=statusOf(map.st!=null?txt[map.st]:txt.find(x=>/^[غح]$/.test(String(x).trim()))); if(!st) continue;
       const cls=txt[map.cls]||''; const m=cls.match(/(أول|ثاني|ثالث)\s*ش\s*(\d+)/);
-      const list=s=>(s||'').split(/[،,\n]/).map(x=>x.trim()).filter(x=>x&&x!=='0'&&x!=='٠');
-      students.push({no:+String(txt[map.no]||'').replace(/\D/g,''),name:txt[map.name]||'',classFull:cls,grade:m?m[1]:'',section:m?+m[2]:null,present:list(row[map.pr]),absent:list(row[map.ab]),status:/غائب/.test(st)?'غائب':'حاضر'});
+      const list=periodList;
+      students.push({no:+String(txt[map.no]||'').replace(/\D/g,''),name:txt[map.name]||'',classFull:cls,grade:m?m[1]:'',section:m?+m[2]:null,present:list(row[map.pr]),absent:list(row[map.ab]),status:st});
     }
   }
   return {students,dateText};
