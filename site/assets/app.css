@@ -183,7 +183,8 @@ table.pt th,table.pt td{border:1px solid #7f8c8f;padding:4px 6px;text-align:cent
 table.pt th{background:#f2e9dd}
 table.pt th.ttl{background:#2289a8;color:#fff;font-size:15px;font-weight:600;padding:7px}
 table.pt th.hd{background:#1e8fb0;color:#fff}
-table.pt tbody tr:nth-child(odd) td{background:#f2f2f2}
+table.pt tbody tr td{background:#fff}
+table.pt tbody tr:nth-child(even) td{background:#eaf4f1}
 table.pt tr.g td{background:#dcebef!important;font-size:13.5px}
 table.pt td.lt{text-align:right}
 .p-prep{margin-top:14px;font-size:12.5px;display:inline-grid;gap:2px}
