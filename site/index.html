@@ -161,13 +161,14 @@
             <label class="check" for="fPartial"><input type="checkbox" id="fPartial"> إضافة الحاضرين الذين فاتتهم حصص <span class="note" id="partialHint"></span></label>
             <label class="field" for="fSearch">بحث بالاسم <input id="fSearch" type="search" placeholder="جزء من الاسم"></label>
             <label class="check" for="fMerge"><input type="checkbox" id="fMerge"> دمج شعب كل صف في كشف واحد (أول / ثاني / ثالث)</label>
+            <label class="check" for="fCnt"><input type="checkbox" id="fCnt" checked> تضمين عمود «عدد حصص الغياب» في الكشف والتنزيلات</label>
             <label class="check" for="fPer"><input type="checkbox" id="fPer" checked> تضمين عمود «الحصص الغائبة» في الكشف والتنزيلات</label>
           </div>
           <div><p class="note" style="margin-bottom:6px">عدد الطلاب حسب الشعبة (اضغط للتصفية)</p><div class="sections" id="secChips"></div></div>
         </div>
         <div class="pane-bar"><p class="note" id="sCount"></p><div class="exp" data-kind="students"></div></div>
         <div class="scroll"><table>
-          <thead><tr><th>م</th><th>اسم الطالب</th><th>الصف</th><th>الشعبة</th><th>عدد حصص الغياب</th><th id="thPer">الحصص الغائبة</th><th id="thStatus" hidden>الحالة في نقار</th></tr></thead>
+          <thead><tr><th>م</th><th>اسم الطالب</th><th>الصف</th><th>الشعبة</th><th id="thCnt">عدد حصص الغياب</th><th id="thPer">الحصص الغائبة</th><th id="thStatus" hidden>الحالة في نقار</th></tr></thead>
           <tbody id="sBody"></tbody>
         </table></div>
       </div>
@@ -229,7 +230,7 @@
 <script src="vendor/jspdf.umd.min.js?v=97cff153c976"></script>
 <script src="assets/core.js?v=637bcd05ad0d"></script>
 <script src="assets/wadih.js?v=846ae7e46525"></script>
-<script src="assets/app.js?v=51be1f11a9e5"></script>
+<script src="assets/app.js?v=21597c001935"></script>
 <script src="vendor/xlsx.full.min.js?v=c9506197caf8"></script>
 <script src="assets/no-login.js?v=3e55a0e948ae"></script>
 </body>
