@@ -229,6 +229,7 @@ function subjSave(name,v){ try{ const m=subjMem(); if(v) m[name]=v.slice(0,80); 
 function cnt(s){ return s.absent.length }
 function bucketOf(n){ return n>=7?7:n }
 const withStatus=()=>$('fPartial').checked;
+const withPer=()=>!$('fPer')||$('fPer').checked;
 const stFilter=()=>withStatus()?'':'غائب';
 function chosenBuckets(){ return [1,2,3,4,5,6,7].filter(i=>$('b'+i).checked) }
 function studentList(opts={}){
@@ -325,10 +326,10 @@ function renderStudents(){
   const list=studentList(); const groups=studentGroups(list);
   $('n-s').textContent=list.length; $('sCount').textContent=`${list.length} طالبًا في الكشف الحالي`+($('fMerge').checked?` · ${groups.map(g=>g.title+': '+g.rows.length).join(' · ')}`:'');
   let html='';
-  for(const gr of groups){ if(gr.title) html+=`<tr class="grp"><td colspan="${withStatus()?7:6}">${esc(gr.title)} — ${gr.rows.length} طالبًا</td></tr>`;
-    html+=gr.rows.map((s,i)=>`<tr><td class="num">${i+1}</td><td>${esc(s.name)}</td><td>${esc(GN[s.grade]||s.grade)}</td><td class="num"><bdi>ش ${s.section??''}</bdi></td><td class="num"><b>${cnt(s)}</b></td><td>${esc(s.absent.join('، '))}</td>${withStatus()?`<td>${s.status==='غائب'?'<span class="pill a">غائب</span>':'<span class="pill p">حاضر</span>'}</td>`:''}</tr>`).join('') }
+  for(const gr of groups){ if(gr.title) html+=`<tr class="grp"><td colspan="${5+(withPer()?1:0)+(withStatus()?1:0)}">${esc(gr.title)} — ${gr.rows.length} طالبًا</td></tr>`;
+    html+=gr.rows.map((s,i)=>`<tr><td class="num">${i+1}</td><td>${esc(s.name)}</td><td>${esc(GN[s.grade]||s.grade)}</td><td class="num"><bdi>ش ${s.section??''}</bdi></td><td class="num"><b>${cnt(s)}</b></td>${withPer()?`<td>${esc(s.absent.join('، '))}</td>`:''}${withStatus()?`<td>${s.status==='غائب'?'<span class="pill a">غائب</span>':'<span class="pill p">حاضر</span>'}</td>`:''}</tr>`).join('') }
   $('sBody').innerHTML=html||`<tr><td colspan="7" class="note">لا يوجد طلاب بهذه التصفية.</td></tr>`;
-  $('thStatus').hidden=!withStatus();
+  $('thStatus').hidden=!withStatus(); $('thPer').hidden=!withPer();
   const hidden=model.students.filter(x=>x.status==='حاضر'&&cnt(x)>0&&(!g||x.grade===g)).length;
   $('partialHint').textContent=withStatus()?'':(hidden?`(${hidden} طالبًا حاضرًا فاتتهم حصص مخفيون)`:'');
 }
@@ -370,13 +371,13 @@ for(let i=1;i<=7;i++) $('b'+i).addEventListener('input',()=>{ if(!isMin()) retur
 $('bAll').addEventListener('input',()=>{ if(isMin()){ minLo=$('bAll').checked?1:8; applyMin() } },true);
 for(const r of ['mMin','mExact']) $(r).addEventListener('change',()=>{ if(isMin()){ minLo=chosenBuckets()[0]||1; applyMin() } $('bAll').checked=[1,2,3,4,5,6,7].every(i=>$('b'+i).checked); renderStudents(); updateDlNote() });
 $('bAll').addEventListener('input',()=>{ for(let i=1;i<=7;i++) $('b'+i).checked=$('bAll').checked; renderStudents(); updateDlNote() });
-['fGrade','fPartial','fSearch','fMerge','b1','b2','b3','b4','b5','b6','b7'].forEach(id=>$(id).addEventListener('input',()=>{ $('bAll').checked=[1,2,3,4,5,6,7].every(i=>$('b'+i).checked); renderStudents();updateDlNote()}));
+['fGrade','fPartial','fSearch','fMerge','fPer','b1','b2','b3','b4','b5','b6','b7'].forEach(id=>$(id).addEventListener('input',()=>{ $('bAll').checked=[1,2,3,4,5,6,7].every(i=>$('b'+i).checked); renderStudents();updateDlNote()}));
 $('addAbsent').addEventListener('change',updateDlNote);
 if($('addNoLogin')) $('addNoLogin').addEventListener('change',updateDlNote);
 /* remember the user's choices on this device */
 const PREF=(()=>{ try{ return JSON.parse(localStorage.getItem('balat-prefs')||'{}') }catch(e){ return {} } })();
 function savePref(k,v){ PREF[k]=v; try{ localStorage.setItem('balat-prefs',JSON.stringify(PREF)) }catch(e){} }
-['addAbsent','addNoLogin'].forEach(id=>{ if(!$(id)) return; if(typeof PREF[id]==='boolean') $(id).checked=PREF[id]; $(id).addEventListener('change',()=>savePref(id,$(id).checked)) });
+['addAbsent','addNoLogin','fPer'].forEach(id=>{ if(!$(id)) return; if(typeof PREF[id]==='boolean') $(id).checked=PREF[id]; $(id).addEventListener('change',()=>savePref(id,$(id).checked)) });
 if(PREF.sSrc&&$('sSrc'+{auto:'Auto',naqar:'Naqar',platform:'Plat'}[PREF.sSrc])) $('sSrc'+{auto:'Auto',naqar:'Naqar',platform:'Plat'}[PREF.sSrc]).checked=true;
 document.querySelectorAll('input[name="sSrc"]').forEach(r=>r.addEventListener('change',()=>savePref('sSrc',r.value)));
 document.querySelectorAll('input[name="sSrc"]').forEach(r=>r.addEventListener('change',()=>{ if(model){ renderFigures(); updateSrcNote() } }));
@@ -433,9 +434,9 @@ function listSpec(kind){
   if(kind==='lessons') return {orientation:'land',title:`الحصص الافتراضية${school} ${when}`,headers:['م','اسم المعلم/ة','الصف والشعب','الحصص','المادة','عنوان الدرس'],widths:[.45,2.1,2.1,1,1.6,3.6],
     groups:[{title:`استمارة متابعة سير العملية التعليمية (حضور حصص افتراضية)${school} ${when}`,rows:model.teachers.map((t,i)=>[i+1,t.name,t.cls,t.periods,t.subject,t.title])}]};
   if(kind==='students'){ const groups=studentGroups(studentList());
-    const ws=withStatus();
-    return {orientation:'port',headers:['م','اسم الطالب','الصف والشعبة','عدد الحصص','الحصص الغائبة'].concat(ws?['الحالة']:[]),widths:[.5,3,1.6,.9,2.6].concat(ws?[.9]:[]),
-      groups:groups.map(g=>({title:`كشف الطلاب الغائبين${g.title?' – '+g.title:''}${school} ${when} (${g.rows.length} طالبًا)`,rows:g.rows.map((s,i)=>[i+1,s.name,`${s.grade} ث – ش${s.section}`,cnt(s),s.absent.join('، '),...(ws?[s.status]:[])])}))} }
+    const ws=withStatus(), wp=withPer();
+    return {orientation:'port',headers:['م','اسم الطالب','الصف والشعبة','عدد الحصص'].concat(wp?['الحصص الغائبة']:[],ws?['الحالة']:[]),widths:[.5,3,1.6,.9].concat(wp?[2.6]:[],ws?[.9]:[]),
+      groups:groups.map(g=>({title:`كشف الطلاب الغائبين${g.title?' – '+g.title:''}${school} ${when} (${g.rows.length} طالبًا)`,rows:g.rows.map((s,i)=>[i+1,s.name,`${s.grade} ث – ش${s.section}`,cnt(s),...(wp?[s.absent.join('، ')]:[]),...(ws?[s.status]:[])])}))} }
   if(kind==='teachers'){ const ab=model.teachers.filter((t,i)=>teacherAbsent[i]); const np=model.teachers.filter((t,i)=>!teacherAbsent[i]&&t.notPrepared);
     const groups=[{title:`المعلمون الغائبون${school} ${when} (${ab.length})`,rows:ab.map((t,i)=>[i+1,t.name,t.cls,t.periods,t.subject,t.present?'حُدّد غائبًا':'لم يُعدّ أي درس'])}];
     if(np.length) groups.push({title:`حصص غير معدّة لمعلمين حاضرين ${when}`,rows:np.map((t,i)=>[i+1,t.name,t.lessons.filter(b=>b.notPrepared).map(b=>`${b.grade} ش${b.section}`).join('، '),t.lessons.filter(b=>b.notPrepared).map(b=>b.period).join('، '),t.subject,`${t.notPrepared} غير معدّة`])});
@@ -461,8 +462,8 @@ async function doExport(kind,fmt,btn){
       XLSX.utils.book_append_sheet(wb,ws,'المنقطعون'); const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
       await offer(fname(NAMES[kind].replace(/\s/g,'_'),'xlsx'),new Blob([out]),'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     } else if(fmt==='csv'){
-      const ws=withStatus(); const rows=[['م','اسم الطالب','الصف','الشعبة','عدد حصص الغياب','الحصص الغائبة'].concat(ws?['الحالة في نقار']:[])];
-      studentGroups(studentList()).forEach(g=>g.rows.forEach((s,i)=>rows.push([i+1,s.name,GN[s.grade]||s.grade,s.section,cnt(s),s.absent.join('، ')].concat(ws?[s.status]:[]))));
+      const ws=withStatus(), wp=withPer(); const rows=[['م','اسم الطالب','الصف','الشعبة','عدد حصص الغياب'].concat(wp?['الحصص الغائبة']:[],ws?['الحالة في نقار']:[])];
+      studentGroups(studentList()).forEach(g=>g.rows.forEach((s,i)=>rows.push([i+1,s.name,GN[s.grade]||s.grade,s.section,cnt(s)].concat(wp?[s.absent.join('، ')]:[],ws?[s.status]:[]))));
       await offer(fname('الطلاب_الغائبون','csv'),'﻿'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n'),'text/csv');
     } else if(fmt==='docx'){
       busy('تجهيز ملف Word …');
