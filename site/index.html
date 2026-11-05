@@ -8,24 +8,32 @@
 <meta name="color-scheme" content="light dark">
 <title>تقرير الحضور والتحضير</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="assets/app.css?v=154eda2c7372">
+<link rel="stylesheet" href="assets/app.css?v=f4841624bcbb">
 </head>
 <body>
 <div class="wrap" dir="rtl" lang="ar">
   <header class="top">
     <div>
+      <span class="kicker">ثانوية بلاط الشهداء · جدة</span>
       <h1>تقرير الحضور والتحضير</h1>
       <p class="sub">ارفع تقريري نقار (تحضير المعلمين وغياب الطلاب) بصيغة PDF أو Word، وتُعبّأ استمارة متابعة التعليم عن بُعد تلقائيًا.</p>
     </div>
     <div class="stamp"><span>تاريخ التقرير</span><b id="stampDate"></b></div>
   </header>
+  <nav class="qnav" aria-label="التنقل السريع">
+    <a href="#upTitle">الملفات</a>
+    <a href="#fmTitle">بيانات الاستمارة</a>
+    <a href="#results">إحصائيات اليوم والكشوف</a>
+    <a href="#nl-root">غير الداخلين للمنصة</a>
+    <a href="#nl-hist">سجل المتابعة</a>
+  </nav>
 
   <section class="panel" aria-labelledby="upTitle">
     <div class="panel-head">
       <h2 id="upTitle">الملفات</h2>
       <span class="note">تقبل كل الخانات PDF أو Word أو Excel، وكل الملفات اختيارية. اسحب الملفات معًا إلى أي خانة وسيُتعرّف على كل ملف من محتواه، وقائمة الطلاب الغائبين عن المنصة تذهب تلقائيًا إلى قسمهم بأي صيغة كانت.</span>
     </div>
-    <div class="slots" style="grid-template-columns:repeat(auto-fit,minmax(210px,1fr))">
+    <div class="slots" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
       <label class="slot" id="slot-form" for="in-form">
         <span class="lbl">استمارة المتابعة <span class="tag" id="tag-form">Word</span></span>
         <span class="file" id="name-form">لم يُرفع ملف</span>
@@ -40,6 +48,12 @@
         <span class="lbl">غياب الحصص للطلاب <span class="tag" id="tag-students">PDF / Word / Excel</span></span>
         <span class="file" id="name-students">لم يُرفع ملف</span>
         <input type="file" id="in-students" accept=".pdf,.docx,.doc,.xlsx,.xls,.xlsm,.csv" multiple>
+      </label>
+      <label class="slot" id="slot-wadih" for="in-wadih">
+        <span class="lbl">تقرير واضح <span class="tag" id="tag-wadih">PDF واضح</span></span>
+        <span class="file" id="name-wadih">لم يُرفع ملف</span>
+        <span class="prog" id="prog-wadih" hidden><i></i></span>
+        <input type="file" id="in-wadih" accept=".pdf" multiple>
       </label>
       <label class="slot" id="slot-nologin" for="in-nologin">
         <span class="lbl">طلاب غائبون (منصة مدرستي) <span class="tag" id="tag-nologin">Excel / Word / PDF</span></span>
@@ -66,12 +80,12 @@
       <div class="field" style="display:grid;gap:6px">إحصائية الطلبة في الاستمارة من
         <span style="display:flex;flex-wrap:wrap;gap:12px" role="radiogroup" aria-label="مصدر إحصائية الطلبة">
           <label class="check" for="sSrcAuto"><input type="radio" name="sSrc" id="sSrcAuto" value="auto" checked> تلقائي</label>
-          <label class="check" for="sSrcNaqar"><input type="radio" name="sSrc" id="sSrcNaqar" value="naqar"> غياب الحصص (نقار)</label>
+          <label class="check" for="sSrcNaqar"><input type="radio" name="sSrc" id="sSrcNaqar" value="naqar"> غياب الحصص (نقار / واضح)</label>
           <label class="check" for="sSrcPlat"><input type="radio" name="sSrc" id="sSrcPlat" value="platform"> طلاب غائبون (منصة مدرستي)</label>
         </span>
         <span class="note" id="sSrcNote"></span>
       </div>
-      <label class="field" for="sTotal" id="sTotalWrap" hidden>إجمالي طلاب المدرسة (لملف من لم يدخل فقط) <input type="number" id="sTotal" min="0" class="w-num" placeholder="مثال 1021"></label>
+      <label class="field" for="sTotal" id="sTotalWrap" hidden>إجمالي طلاب المدرسة <input type="number" id="sTotal" min="0" class="w-num" placeholder="مثال 1021"></label>
       <label class="field grow" for="fSupport">الدعم الذي تحتاجه المدرسة (كل سطر بند) <textarea id="fSupport" placeholder="اختياري"></textarea></label>
     </div>
   </section>
@@ -107,6 +121,10 @@
         <span style="display:grid;gap:6px"><label class="check" for="addAbsent"><input type="checkbox" id="addAbsent" checked> إضافة كشف الغائبين (حسب التصفية) إلى آخر الاستمارة</label>
         <label class="check" for="addNoLogin"><input type="checkbox" id="addNoLogin" checked> إضافة كشف الطلاب الذين لم يدخلوا المنصة (حسب التصنيف والبيانات المحددة في قسمهم أسفل الصفحة)</label></span>
       </div>
+      <div class="row" style="justify-content:space-between;border-top:1px solid var(--line);padding-top:12px">
+        <span class="note">ملف PDF واحد يجمع: إحصائيات اليوم، والاستمارة مع كشوفها، وإحصائية المنصة حسب الصف والشعب، والطلاب المنقطعين تمامًا.</span>
+        <button class="primary" id="fullReport" type="button">تقرير اليوم الكامل (PDF)</button>
+      </div>
     </section>
 
     <section style="display:grid;gap:12px">
@@ -114,6 +132,7 @@
         <button role="tab" id="tab-t" aria-selected="true" aria-controls="pane-t">الحصص الافتراضية<span class="n" id="n-t"></span></button>
         <button role="tab" id="tab-s" aria-selected="false" aria-controls="pane-s">الطلاب الغائبون<span class="n" id="n-s"></span></button>
         <button role="tab" id="tab-a" aria-selected="false" aria-controls="pane-a">غياب المعلمين<span class="n" id="n-a"></span></button>
+        <button role="tab" id="tab-c" aria-selected="false" aria-controls="pane-c">المنقطعون تمامًا<span class="n" id="n-c"></span></button>
         <button role="tab" id="tab-w" aria-selected="false" aria-controls="pane-w">تنبيهات<span class="n" id="n-w"></span></button>
       </div>
 
@@ -160,6 +179,29 @@
         </table></div>
       </div>
 
+      <div id="pane-c" class="pane" role="tabpanel" aria-labelledby="tab-c" hidden>
+        <div class="cut-intro">
+          <div><h3>الطلاب المنقطعون تمامًا</h3><p class="note" id="cNote">غابوا عن الحصص في تقرير نقار <b>و</b> لم يدخلوا منصة مدرستي اليوم. هؤلاء أولوية التواصل مع أولياء الأمور.</p></div>
+          <div class="exp" data-kind="cut"></div>
+        </div>
+        <div class="cut-stats" id="cStats"></div>
+        <div class="filters cut-filters">
+          <div class="row">
+            <span class="seg" role="radiogroup" aria-label="من يُحسب غائبًا">
+              <label for="cAny"><input type="radio" name="cMode" id="cAny" value="any" checked> غاب حصة أو أكثر</label>
+              <label for="cDay"><input type="radio" name="cMode" id="cDay" value="day"> غائب اليوم كاملًا</label>
+            </span>
+            <label class="field" for="cGrade">الصف <select id="cGrade"><option value="">الكل</option><option value="أول">أول ثانوي</option><option value="ثاني">ثاني ثانوي</option><option value="ثالث">ثالث ثانوي</option></select></label>
+            <label class="check" for="cGroup"><input type="checkbox" id="cGroup"> تقسيم حسب الشعبة</label>
+          </div>
+          <div class="cut-cols" id="cCols"></div>
+        </div>
+        <div class="scroll"><table class="cut-table">
+          <thead id="cHead"></thead>
+          <tbody id="cBody"></tbody>
+        </table></div>
+      </div>
+
       <div id="pane-w" class="pane" role="tabpanel" aria-labelledby="tab-w" hidden>
         <div class="pane-bar"><span></span><div class="exp" data-kind="alerts"></div></div>
         <div class="panel" id="warnBox"></div>
@@ -169,7 +211,8 @@
   </div>
 
   <!-- خانة مستقلة: الطلاب الذين لم يدخلوا المنصة (assets/no-login.js) -->
-  <section id="nl-root" aria-label="الطلاب الذين لم يدخلوا المنصة"></section>
+  <section id="nl-root" aria-label="الطلاب الذين لم يدخلوا المنصة" style="scroll-margin-top:70px"></section>
+  <div id="nl-hist" style="scroll-margin-top:70px"></div>
 </div>
 <footer class="site-foot" dir="rtl" lang="ar">
   <div class="site-foot-in">
@@ -184,8 +227,9 @@
 <script src="vendor/html2canvas.min.js?v=e87e55079432"></script>
 <script src="vendor/jspdf.umd.min.js?v=97cff153c976"></script>
 <script src="assets/core.js?v=637bcd05ad0d"></script>
-<script src="assets/app.js?v=23ea757421b0"></script>
+<script src="assets/wadih.js?v=846ae7e46525"></script>
+<script src="assets/app.js?v=d11a1de957fa"></script>
 <script src="vendor/xlsx.full.min.js?v=c9506197caf8"></script>
-<script src="assets/no-login.js?v=8e7fbf18dbff"></script>
+<script src="assets/no-login.js?v=8114d665aa43"></script>
 </body>
 </html>
