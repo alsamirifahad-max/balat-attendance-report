@@ -646,7 +646,8 @@ function buildGradePages(){
   const G=window.NoLogin&&window.NoLogin.gradeCards&&window.NoLogin.gradeCards(); const T=window.NoLogin.gradeSummary();
   $('render').innerHTML=''; const pages=[]; const cur=newPage('land'); pages.push(cur.pg); const d=curDate();
   const n=G.cards.length;
-  cur.body.innerHTML=`<div class="p-title">نسبة الدخول لمنصة مدرستي حسب الصف — ${esc(d.day)} ${esc(d.hijriLong)}</div><div class="ps-grid" style="grid-template-columns:repeat(${n},1fr)">`+G.cards.map(x=>{ if(x) return psCard(Object.assign({listTotal:G.listTotal},x));
+  const GLB=G.gradeLabel?' — '+G.gradeLabel:'';
+  cur.body.innerHTML=`<div class="p-title">نسبة الدخول لمنصة مدرستي حسب الصف${esc(GLB)} — ${esc(d.day)} ${esc(d.hijriLong)}</div><div class="ps-grid" style="grid-template-columns:repeat(${n},1fr)">`+G.cards.map(x=>{ if(x) return psCard(Object.assign({listTotal:G.listTotal},x));
     if(x.of==null) return `<div class="ps" style="--pc:${x.pc}"><div class="k">${esc(x.title)} — لم يدخلوا</div><div class="v">${x.v} <small>طالبًا</small></div>
       <div class="bar2"><i style="display:block;width:${(x.ratio*100).toFixed(1)}%;background:#b3372f"></i></div>
       <div class="row2" style="grid-template-columns:1fr"><div class="nn">حصته من قائمة الغائبين (${G.listTotal})<b>${esc(x.share)}</b></div></div></div>`;
@@ -656,9 +657,9 @@ function buildGradePages(){
     <div class="row2"><div class="yy">نسبة الدخول (${x.inn})<b>${esc(x.pIn)}</b></div><div class="nn">نسبة عدم الدخول (${x.v})<b>${esc(x.pOut)}</b></div></div></div>`}).join('')+`</div>`;
   const spec={headers:T.headers,widths:T.headers.map((h,i)=>i?1:1.6)}; const sum=spec.widths.reduce((a,b)=>a+b,0); const sp=Object.assign({},spec,{widths:spec.widths.map(w=>w/sum*100)});
   const tb=document.createElement('div'); tb.style.marginTop='12px'; cur.body.appendChild(tb);
-  tb.innerHTML=`<table class="pt">${tableHead(sp,'نسبة الدخول لمنصة مدرستي حسب الصف'+(G.full?'':' (الملف لا يحتوي على إجمالي الطلاب)'))}<tbody>${T.rows.map((r,i)=>`<tr${G.full&&i===T.rows.length-1?' style="font-weight:700"':''}>${r.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  tb.innerHTML=`<table class="pt">${tableHead(sp,'نسبة الدخول لمنصة مدرستي حسب الصف'+GLB+(G.full?'':' (الملف لا يحتوي على إجمالي الطلاب)'))}<tbody>${T.rows.map((r,i)=>`<tr${T.hasTotal&&i===T.rows.length-1?' style="font-weight:700"':''}>${r.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
   const ST=window.NoLogin.sectionTable&&window.NoLogin.sectionTable();
-  if(ST&&ST.rows.length) addTable(pages,{headers:ST.headers,widths:ST.headers.map((h,i)=>i===1?2:1)},{title:'ترتيب الشعب حسب نسبة الدخول لمنصة مدرستي'+(ST.full?'':' (حسب عدد غير الداخلين)'),rows:ST.rows},'land');
+  if(ST&&ST.rows.length) addTable(pages,{headers:ST.headers,widths:ST.headers.map((h,i)=>i===1?2:1)},{title:'ترتيب الشعب حسب نسبة الدخول لمنصة مدرستي'+(ST.gradeLabel?' — '+ST.gradeLabel:'')+(ST.full?'':' (حسب عدد غير الداخلين)'),rows:ST.rows},'land');
   return pages;
 }
 window.BalatGradeExport=async function(fmt){
@@ -668,7 +669,7 @@ window.BalatGradeExport=async function(fmt){
     busy('تجهيز PDF …');
     if(!formMeta) formMeta=await Core.formInfo(JSZip,files.form.bytes.slice(0));
     const blob=await pagesToPdf(buildGradePages());
-    await offer(fname((fmt==='print'?'للطباعة_':'')+'نسبة_الدخول_للمنصة_حسب_الصف','pdf'),blob,'application/pdf');
+    const G0=window.NoLogin.gradeCards(); await offer(fname((fmt==='print'?'للطباعة_':'')+'نسبة_الدخول_للمنصة_حسب_الصف'+(G0&&G0.gradeLabel?'_'+G0.gradeLabel.replace(/\s+/g,'_'):''),'pdf'),blob,'application/pdf');
   }catch(e){ console.error(e); setStatus('تعذّر التنزيل: '+(e.message||e),true) }
   busy();
 };
